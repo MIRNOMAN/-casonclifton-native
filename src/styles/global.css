@@ -11,6 +11,14 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   --spacing-hairline: hairlineWidth();
+
+  /* Brand / project colors */
+  --color-onboarding-accent: #7c3aed;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-surface: #f9fafb;
+  --color-input-border: #e5e7eb;
+  --color-screen-bg: #ffffff;
 }
 
 @source "../";
