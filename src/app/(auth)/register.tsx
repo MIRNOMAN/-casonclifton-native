@@ -61,7 +61,10 @@ export default function RegisterScreen() {
     setPhoneError(pe);
     setPasswordError(pwe);
     if (ee || pe || pwe) return;
-    router.push('/(auth)/otp');
+    router.push({
+      pathname: '/(auth)/otp',
+      params: { email: email.trim() },
+    });
   };
 
   return (

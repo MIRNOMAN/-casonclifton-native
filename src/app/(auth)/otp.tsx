@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,14 +14,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
+const ACTIVE_BORDER = '#FEA08F';
 
 export default function OtpScreen() {
+  const { email } = useLocalSearchParams<{ email?: string }>();
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [hasError, setHasError] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -31,19 +35,39 @@ export default function OtpScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
     ]).start();
-  }, []);
+
+    const focusTimer = setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 250);
+
+    return () => clearTimeout(focusTimer);
+  }, [fadeAnim, slideAnim]);
 
   const handleChange = (value: string, index: number) => {
     const newOtp = [...otp];
     newOtp[index] = value.slice(-1);
     setOtp(newOtp);
     setHasError(false);
-    if (value && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
+    if (value && index < OTP_LENGTH - 1) {
+      setActiveIndex(index + 1);
+      inputRefs.current[index + 1]?.focus();
+      return;
+    }
+
+    setActiveIndex(index);
+
+    if (newOtp.every((digit) => digit !== '')) {
+      setTimeout(() => {
+        router.push('/(auth)/aggrement');
+      }, 120);
+    }
   };
 
   const handleKeyPress = (key: string, index: number) => {
-    if (key === 'Backspace' && otp[index] === '' && index > 0)
+    if (key === 'Backspace' && otp[index] === '' && index > 0) {
+      setActiveIndex(index - 1);
       inputRefs.current[index - 1]?.focus();
+    }
   };
 
   const handleVerify = () => {
@@ -51,7 +75,7 @@ export default function OtpScreen() {
       setHasError(true);
       return;
     }
-    // router.replace('/(tabs)/');
+    router.push('/(auth)/aggrement');
   };
 
   return (
@@ -62,14 +86,26 @@ export default function OtpScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.container}>
             <Pressable style={styles.backBtn} onPress={() => router.back()}>
-              <ChevronLeft size={24} color={COLORS.textPrimary} />
+              <ChevronLeft size={22} color={COLORS.textPrimary} />
             </Pressable>
 
             <Animated.View
-              style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], width: '100%' }}>
-              <Text className="mb-2 text-3xl font-bold text-white">Verify OTP</Text>
-              <Text className="mb-10 text-sm text-[#9CA3AF]">
-                Enter the 6-digit code sent to your email address.
+              style={[
+                styles.content,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}>
+              <Image
+                source={require('../../../assets/images/logo/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+
+              <Text className="mt-10 mb-4 text-center text-[32px] leading-9.5 font-bold text-white">
+                Verify identity
+              </Text>
+              <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
+                We have sent code to your email{`\n`}
+                {email || 'kevinjulio@gmail.com'}{' '}
               </Text>
 
               {/* OTP boxes */}
@@ -85,26 +121,22 @@ export default function OtpScreen() {
                     onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, i)}
                     keyboardType="number-pad"
                     maxLength={1}
+                    onFocus={() => setActiveIndex(i)}
                     style={[
                       styles.otpBox,
                       digit !== '' && styles.otpBoxFilled,
+                      activeIndex === i && styles.otpBoxActive,
                       hasError && styles.otpBoxError,
                     ]}
-                    cursorColor={COLORS.accent}
+                    cursorColor={ACTIVE_BORDER}
                   />
                 ))}
               </View>
 
-              <Pressable
-                style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-                onPress={handleVerify}>
-                <Text className="text-base font-bold text-[#0D1117]">Verify</Text>
-              </Pressable>
-
               <View className="mt-6 flex-row items-center justify-center">
                 <Text className="text-sm text-[#9CA3AF]">Didn't receive the code? </Text>
                 <Pressable>
-                  <Text className="text-sm font-semibold text-[#EF4444]">Resend</Text>
+                  <Text className="text-sm font-semibold text-[#FEA08F]">Resend</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -122,34 +154,36 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'transparent',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 18,
   },
-  otpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
+  content: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  logoImage: {
+    width: 150,
+    height: 72,
+    marginBottom: 26,
+  },
+  otpRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 18 },
   otpBox: {
-    width: 48,
-    height: 56,
+    width: 50,
+    height: 50,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
     textAlign: 'center',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
-  otpBoxFilled: { borderColor: COLORS.textSecondary },
-  otpBoxError: { borderColor: COLORS.accent },
-  btn: {
-    width: '100%',
-    height: 54,
-    backgroundColor: COLORS.btn,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnPressed: { opacity: 0.85 },
+  otpBoxFilled: { borderColor: COLORS.border },
+  otpBoxActive: { borderColor: ACTIVE_BORDER },
+  otpBoxError: { borderColor: ACTIVE_BORDER },
 });
