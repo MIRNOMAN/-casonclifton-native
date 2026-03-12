@@ -18,6 +18,9 @@ import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { Link, router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
+const INVALID_BORDER = '#FEA08F';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +28,11 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+
+  const isEmailInvalid = email.length > 0 && !EMAIL_REGEX.test(email.trim());
+  const isPasswordInvalid = password.length > 0 && password.length < 6;
+  const showEmailError = emailError || isEmailInvalid;
+  const showPasswordError = passwordError || isPasswordInvalid;
 
   // ── Entrance animations ──────────────────────────────────
   const logoAnim = useRef(new Animated.Value(0)).current;
@@ -55,10 +63,13 @@ export default function LoginScreen() {
 
   const handleLogin = () => {
     const isEmailEmpty = email.trim() === '';
-    const isPasswordEmpty = password.trim() === '';
-    setEmailError(isEmailEmpty);
-    setPasswordError(isPasswordEmpty);
-    if (isEmailEmpty || isPasswordEmpty) return;
+    const isEmailFormatInvalid = !EMAIL_REGEX.test(email.trim());
+    const isPasswordTooShort = password.trim().length < 6;
+
+    setEmailError(isEmailEmpty || isEmailFormatInvalid);
+    setPasswordError(isPasswordTooShort);
+
+    if (isEmailEmpty || isEmailFormatInvalid || isPasswordTooShort) return;
     // TODO: dispatch login action
   };
 
@@ -74,15 +85,11 @@ export default function LoginScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             {/* ── Logo ── */}
-            <Animated.View style={[styles.logoSection, { opacity: logoAnim }]}>
-              <View style={styles.logoIconWrap}>
-                <View style={styles.logoIconOuter}>
-                  <View style={styles.logoIconInner} />
-                  <View style={styles.logoIconDot} />
-                </View>
-              </View>
-              <Text className="mt-2 text-xl font-bold tracking-[4px] text-white">CRESTCON</Text>
-            </Animated.View>
+            <Image
+              source={require('../../../assets/images/logo/logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
 
             {/* ── Form card ── */}
             <Animated.View
@@ -95,21 +102,25 @@ export default function LoginScreen() {
               ]}>
               {/* Heading */}
               <Text className="mb-1 text-3xl font-bold text-white">Hi, Welcome Back</Text>
-              <Text className="mb-7 text-sm text-[#9CA3AF]">Login in to your account</Text>
+              <Text className="mb-7 text-sm text-[#9CA3AF] md:text-base">
+                Login in to your account
+              </Text>
 
               {/* Email */}
               <Text className="mb-2 text-sm font-medium text-white">Email</Text>
-              <View style={[styles.inputWrap, emailError && styles.inputError]}>
+              <View style={[styles.inputWrap, showEmailError && styles.inputError]}>
                 <Mail
                   size={18}
-                  color={emailError ? COLORS.accent : COLORS.textSecondary}
+                  color={showEmailError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   value={email}
                   onChangeText={(t) => {
                     setEmail(t);
-                    setEmailError(false);
+                    if (emailError) {
+                      setEmailError(false);
+                    }
                   }}
                   placeholder="Your email"
                   placeholderTextColor={COLORS.textSecondary}
@@ -118,20 +129,25 @@ export default function LoginScreen() {
                   style={styles.input}
                 />
               </View>
+              {showEmailError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">Enter a valid email address.</Text>
+              ) : null}
 
               {/* Password */}
               <Text className="mt-5 mb-2 text-sm font-medium text-white">Password</Text>
-              <View style={[styles.inputWrap, passwordError && styles.inputError]}>
+              <View style={[styles.inputWrap, showPasswordError && styles.inputError]}>
                 <Lock
                   size={18}
-                  color={passwordError ? COLORS.accent : COLORS.textSecondary}
+                  color={showPasswordError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   value={password}
                   onChangeText={(t) => {
                     setPassword(t);
-                    setPasswordError(false);
+                    if (passwordError) {
+                      setPasswordError(false);
+                    }
                   }}
                   placeholder="Your password"
                   placeholderTextColor={COLORS.textSecondary}
@@ -149,6 +165,11 @@ export default function LoginScreen() {
                   )}
                 </Pressable>
               </View>
+              {showPasswordError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  Password must be at least 6 characters.
+                </Text>
+              ) : null}
 
               {/* Remember me + Forgot password */}
               <View className="mt-4 mb-7 flex-row items-center justify-between">
@@ -163,7 +184,7 @@ export default function LoginScreen() {
 
                 <Link href="/(auth)/forgot-password" asChild>
                   <Pressable>
-                    <Text className="text-sm font-medium text-[#EF4444]">Forgot password?</Text>
+                    <Text className="text-sm font-medium text-[#FEA08F]">Forgot password?</Text>
                   </Pressable>
                 </Link>
               </View>
@@ -180,7 +201,7 @@ export default function LoginScreen() {
                 <Text className="text-sm text-[#9CA3AF]">Don't have an account? </Text>
                 <Link href="/(auth)/register" asChild>
                   <Pressable>
-                    <Text className="text-sm font-semibold text-[#EF4444]">Register</Text>
+                    <Text className="text-sm font-semibold text-[#FEA08F]">Register</Text>
                   </Pressable>
                 </Link>
               </View>
@@ -214,42 +235,11 @@ const styles = StyleSheet.create({
     marginBottom: 36,
     marginTop: 16,
   },
-  logoIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 220,
+    height: 90,
+    marginBottom: 60,
   },
-  logoIconOuter: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  logoIconInner: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  logoIconDot: {
-    position: 'absolute',
-    bottom: 4,
-    right: 2,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
-  },
-
   // ── Form ─────────────────────────────────────────────────
   card: {
     width: '100%',
@@ -267,7 +257,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   inputError: {
-    borderColor: COLORS.accent,
+    borderColor: INVALID_BORDER,
   },
   inputIcon: {
     marginRight: 10,

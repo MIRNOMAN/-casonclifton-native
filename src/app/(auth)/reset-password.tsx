@@ -16,6 +16,8 @@ import { ChevronLeft, Eye, EyeOff, Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
+const INVALID_BORDER = '#FEA08F';
+
 export default function ResetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -23,6 +25,11 @@ export default function ResetPasswordScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [confirmError, setConfirmError] = useState(false);
+
+  const isPasswordInvalid = password.length > 0 && password.trim().length < 6;
+  const isConfirmInvalid = confirm.length > 0 && (confirm.trim().length < 6 || confirm !== password);
+  const showPasswordError = passwordError || isPasswordInvalid;
+  const showConfirmError = confirmError || isConfirmInvalid;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -35,8 +42,8 @@ export default function ResetPasswordScreen() {
   }, []);
 
   const handleReset = () => {
-    const pe = password.trim() === '';
-    const ce = confirm.trim() === '' || confirm !== password;
+    const pe = password.trim().length < 6;
+    const ce = confirm.trim().length < 6 || confirm !== password;
     setPasswordError(pe);
     setConfirmError(ce);
     if (pe || ce) return;
@@ -51,31 +58,39 @@ export default function ResetPasswordScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.container}>
             <Pressable style={styles.backBtn} onPress={() => router.back()}>
-              <ChevronLeft size={24} color={COLORS.textPrimary} />
+              <ChevronLeft size={22} color={COLORS.textPrimary} />
             </Pressable>
 
             <Animated.View
-              style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], width: '100%' }}>
-              <Text className="mb-2 text-3xl font-bold text-white">Reset Password</Text>
-              <Text className="mb-8 text-sm text-[#9CA3AF]">
-                Create a new strong password for your account.
+              style={[
+                styles.content,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}>
+             
+              <Text className="mb-4 text-center text-[32px] mt-10 font-bold leading-9.5 text-white">
+                Create New Password
+              </Text>
+              <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
+                Your password must be different from{`\n`}previous used password
               </Text>
 
               {/* New password */}
               <Text className="mb-2 text-sm font-medium text-white">New Password</Text>
-              <View style={[styles.inputWrap, passwordError && styles.inputError]}>
+              <View style={[styles.inputWrap, showPasswordError && styles.inputError]}>
                 <Lock
                   size={18}
-                  color={passwordError ? COLORS.accent : COLORS.textSecondary}
+                  color={showPasswordError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
                   value={password}
                   onChangeText={(t) => {
                     setPassword(t);
-                    setPasswordError(false);
+                    if (passwordError) {
+                      setPasswordError(false);
+                    }
                   }}
-                  placeholder="New password"
+                  placeholder="Enter new password"
                   placeholderTextColor={COLORS.textSecondary}
                   secureTextEntry={!showPassword}
                   style={styles.input}
@@ -91,22 +106,27 @@ export default function ResetPasswordScreen() {
                   )}
                 </Pressable>
               </View>
+              {showPasswordError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">Password must be at least 6 characters.</Text>
+              ) : null}
 
               {/* Confirm password */}
               <Text className="mt-5 mb-2 text-sm font-medium text-white">Confirm Password</Text>
-              <View style={[styles.inputWrap, confirmError && styles.inputError]}>
+              <View style={[styles.inputWrap, showConfirmError && styles.inputError]}>
                 <Lock
                   size={18}
-                  color={confirmError ? COLORS.accent : COLORS.textSecondary}
+                  color={showConfirmError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
                   value={confirm}
                   onChangeText={(t) => {
                     setConfirm(t);
-                    setConfirmError(false);
+                    if (confirmError) {
+                      setConfirmError(false);
+                    }
                   }}
-                  placeholder="Confirm password"
+                  placeholder="Enter new password"
                   placeholderTextColor={COLORS.textSecondary}
                   secureTextEntry={!showConfirm}
                   style={styles.input}
@@ -122,14 +142,18 @@ export default function ResetPasswordScreen() {
                   )}
                 </Pressable>
               </View>
-              {confirmError && confirm !== '' && (
-                <Text className="mt-1 text-xs text-[#EF4444]">Passwords do not match.</Text>
-              )}
+              {showConfirmError && confirm !== '' ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  {confirm.trim().length < 6
+                    ? 'Password must be at least 6 characters.'
+                    : 'Passwords do not match.'}
+                </Text>
+              ) : null}
 
               <Pressable
                 style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
                 onPress={handleReset}>
-                <Text className="text-base font-bold text-[#0D1117]">Reset Password</Text>
+                <Text className="text-base font-bold text-[#0D1117]">Change Password</Text>
               </Pressable>
             </Animated.View>
           </View>
@@ -146,11 +170,15 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'transparent',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
+  },
+  content: {
+    width: '100%',
+    paddingTop: 8,
   },
   inputWrap: {
     flexDirection: 'row',
@@ -161,8 +189,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 52,
     paddingHorizontal: 14,
+    marginBottom: 2,
   },
-  inputError: { borderColor: COLORS.accent },
+  inputError: { borderColor: INVALID_BORDER },
   icon: { marginRight: 10 },
   input: { flex: 1, color: COLORS.textPrimary, fontSize: 14 },
   eyeBtn: { paddingLeft: 8 },
@@ -173,7 +202,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 32,
+    marginTop: 28,
   },
   btnPressed: { opacity: 0.85 },
 });

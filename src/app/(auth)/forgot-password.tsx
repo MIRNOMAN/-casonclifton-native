@@ -16,9 +16,14 @@ import { Mail, ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
+const INVALID_BORDER = '#FEA08F';
+const EMAIL_OR_PHONE_REGEX = /^(?:[^\s@]+@[^\s@]+\.[^\s@]+|\+?[0-9]{8,15})$/;
+
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
+  const isEmailInvalid = email.length > 0 && !EMAIL_OR_PHONE_REGEX.test(email.trim());
+  const showEmailError = emailError || isEmailInvalid;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -31,11 +36,15 @@ export default function ForgotPasswordScreen() {
   }, []);
 
   const handleSubmit = () => {
-    if (email.trim() === '') {
+    const value = email.trim();
+    if (value === '' || !EMAIL_OR_PHONE_REGEX.test(value)) {
       setEmailError(true);
       return;
     }
-    router.push('/(auth)/forgot-otp');
+    router.push({
+      pathname: '/(auth)/forgot-otp',
+      params: { contact: value },
+    });
   };
 
   return (
@@ -46,37 +55,49 @@ export default function ForgotPasswordScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.container}>
             {/* Back */}
-            <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Pressable style={styles.backBtn} onPress={() => router.replace('/(auth)/login')}>
               <ChevronLeft size={24} color={COLORS.textPrimary} />
             </Pressable>
 
             <Animated.View
-              style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], width: '100%' }}>
-              <Text className="mb-2 text-3xl font-bold text-white">Forgot Password?</Text>
-              <Text className="mb-8 text-sm text-[#9CA3AF]">
-                Enter your email address and we'll send you a verification code.
+              style={[
+                styles.content,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}>
+              <Text className="mb-3 text-center text-[34px] mt-10 leading-9.5 font-bold text-white">
+                Forgot Password?
+              </Text>
+              <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
+                Please insert your email or number phone{`\n`}to send link reset password
               </Text>
 
               <Text className="mb-2 text-sm font-medium text-white">Email</Text>
-              <View style={[styles.inputWrap, emailError && styles.inputError]}>
+              <View style={[styles.inputWrap, showEmailError && styles.inputError]}>
                 <Mail
                   size={18}
-                  color={emailError ? COLORS.accent : COLORS.textSecondary}
+                  color={showEmailError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
                   value={email}
                   onChangeText={(t) => {
                     setEmail(t);
-                    setEmailError(false);
+                    if (emailError) {
+                      setEmailError(false);
+                    }
                   }}
-                  placeholder="Your email"
+                  placeholder="Enter your email or phone"
                   placeholderTextColor={COLORS.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   style={styles.input}
                 />
               </View>
+              {showEmailError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  Enter a valid email address or phone number.
+                </Text>
+              ) : null}
 
               <Pressable
                 style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
@@ -98,11 +119,15 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'transparent',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 36,
+  },
+  content: {
+    width: '100%',
+    paddingTop: 24,
   },
   inputWrap: {
     flexDirection: 'row',
@@ -115,7 +140,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     marginBottom: 24,
   },
-  inputError: { borderColor: COLORS.accent },
+  inputError: { borderColor: INVALID_BORDER },
   icon: { marginRight: 10 },
   input: { flex: 1, color: COLORS.textPrimary, fontSize: 14 },
   btn: {
@@ -125,6 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 12,
   },
   btnPressed: { opacity: 0.85 },
 });

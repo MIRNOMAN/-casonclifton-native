@@ -22,21 +22,22 @@ export default function ResetSuccessScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        {/* Animated checkmark */}
         <Animated.View style={[styles.iconWrap, { transform: [{ scale: scaleAnim }] }]}>
           <Text style={styles.checkIcon}>✓</Text>
         </Animated.View>
 
         <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-            alignItems: 'center',
-          }}>
-          <Text className="mt-8 mb-3 text-center text-3xl font-bold text-white">
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}>
+          <Text className="mt-8 mb-3 text-center text-[34px] leading-10 font-bold text-white">
             Password Reset!{'\n'}Successful
           </Text>
-          <Text className="mb-12 text-center text-sm text-[#9CA3AF]">
+          <Text className="mb-12 text-center text-base leading-7 text-[#9CA3AF]">
             Your password has been reset successfully.{'\n'}You can now log in with your new
             password.
           </Text>
@@ -55,11 +56,12 @@ export default function ResetSuccessScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.background },
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+  content: { width: '100%', alignItems: 'center' },
   iconWrap: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: COLORS.accent,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#FEA08F',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -17,11 +17,11 @@ export const COLORS = {
   /** Muted / placeholder text */
   textSecondary: '#9CA3AF',
   /** Red accent – links, errors */
-  accent: '#EF4444',
+  accent: '#FEA08F',
   /** Login button background */
   btn: '#FFFFFF',
   /** Login button label */
   btnText: '#0D1117',
   /** Alias kept for legacy usage */
-  onboardingAccent: '#EF4444',
+  onboardingAccent: '#FEA08F',
 } as const;

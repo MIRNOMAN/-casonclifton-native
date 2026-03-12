@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
+const INVALID_BORDER = '#FEA08F';
 
 export default function ForgotOtpScreen() {
+  const { contact } = useLocalSearchParams<{ contact?: string }>();
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [hasError, setHasError] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
@@ -31,7 +33,13 @@ export default function ForgotOtpScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
     ]).start();
-  }, []);
+
+    const focusTimer = setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 250);
+
+    return () => clearTimeout(focusTimer);
+  }, [fadeAnim, slideAnim]);
 
   const handleChange = (value: string, index: number) => {
     const newOtp = [...otp];
@@ -39,6 +47,13 @@ export default function ForgotOtpScreen() {
     setOtp(newOtp);
     setHasError(false);
     if (value && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus();
+
+    const nextOtp = [...newOtp];
+    if (nextOtp.every((digit) => digit !== '')) {
+      setTimeout(() => {
+        router.push('/(auth)/reset-password');
+      }, 120);
+    }
   };
 
   const handleKeyPress = (key: string, index: number) => {
@@ -66,10 +81,18 @@ export default function ForgotOtpScreen() {
             </Pressable>
 
             <Animated.View
-              style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], width: '100%' }}>
-              <Text className="mb-2 text-3xl font-bold text-white">Enter OTP</Text>
-              <Text className="mb-10 text-sm text-[#9CA3AF]">
-                Enter the 6-digit code we sent to reset your password.
+              style={[
+                styles.content,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}>
+              <Text className="mb-5 text-center text-[32px] mt-10 leading-9.5 font-bold text-white">
+                Verification Code
+              </Text>
+              <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
+                We have sent code to your {contact?.includes('@') ? 'email' : 'number'}
+                {`\n`}
+                {contact || '(+1) 202-555-0138'}{' '}
+                <Text className="font-semibold text-[#FEA08F]">Change</Text>
               </Text>
 
               <View style={styles.otpRow}>
@@ -89,21 +112,15 @@ export default function ForgotOtpScreen() {
                       digit !== '' && styles.otpBoxFilled,
                       hasError && styles.otpBoxError,
                     ]}
-                    cursorColor={COLORS.accent}
+                    cursorColor={INVALID_BORDER}
                   />
                 ))}
               </View>
 
-              <Pressable
-                style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-                onPress={handleVerify}>
-                <Text className="text-base font-bold text-[#0D1117]">Verify</Text>
-              </Pressable>
-
               <View className="mt-6 flex-row items-center justify-center">
                 <Text className="text-sm text-[#9CA3AF]">Didn't receive the code? </Text>
                 <Pressable>
-                  <Text className="text-sm font-semibold text-[#EF4444]">Resend</Text>
+                  <Text className="text-sm font-semibold text-[#FEA08F]">Resend</Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -121,34 +138,30 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'transparent',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  otpRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
+  content: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: 12,
+  },
+  otpRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 18 },
   otpBox: {
-    width: 48,
-    height: 56,
+    width: 50,
+    height: 50,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
     textAlign: 'center',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
-  otpBoxFilled: { borderColor: COLORS.textSecondary },
-  otpBoxError: { borderColor: COLORS.accent },
-  btn: {
-    width: '100%',
-    height: 54,
-    backgroundColor: COLORS.btn,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnPressed: { opacity: 0.85 },
+  otpBoxFilled: { borderColor: COLORS.border },
+  otpBoxError: { borderColor: INVALID_BORDER },
 });

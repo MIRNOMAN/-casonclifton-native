@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,18 +14,34 @@ import {
   Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react-native';
 import { Link, router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
+const INVALID_BORDER = '#FEA08F';
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const isPhoneValid = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 15;
+};
+
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [nameError, setNameError] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [emailError, setEmailError] = useState(false);
+  const [phoneError, setPhoneError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+
+  const isEmailInvalid = email.length > 0 && !EMAIL_REGEX.test(email.trim());
+  const isPhoneInvalid = phone.length > 0 && !isPhoneValid(phone);
+  const isPasswordInvalid = password.length > 0 && password.trim().length < 6;
+  const showEmailError = emailError || isEmailInvalid;
+  const showPhoneError = phoneError || isPhoneInvalid;
+  const showPasswordError = passwordError || isPasswordInvalid;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -37,13 +54,13 @@ export default function RegisterScreen() {
   }, []);
 
   const handleRegister = () => {
-    const ne = name.trim() === '';
-    const ee = email.trim() === '';
-    const pe = password.trim() === '';
-    setNameError(ne);
+    const ee = email.trim() === '' || !EMAIL_REGEX.test(email.trim());
+    const pe = phone.trim() === '' || !isPhoneValid(phone);
+    const pwe = password.trim().length < 6;
     setEmailError(ee);
-    setPasswordError(pe);
-    if (ne || ee || pe) return;
+    setPhoneError(pe);
+    setPasswordError(pwe);
+    if (ee || pe || pwe) return;
     router.push('/(auth)/otp');
   };
 
@@ -60,52 +77,38 @@ export default function RegisterScreen() {
             showsVerticalScrollIndicator={false}>
             {/* Logo */}
             <Animated.View style={[styles.logoSection, { opacity: fadeAnim }]}>
-              <View style={styles.logoRing}>
-                <View style={styles.logoInner} />
-                <View style={styles.logoDot} />
-              </View>
-              <Text className="mt-2 text-xl font-bold tracking-[4px] text-white">CRESTCON</Text>
+              <Image
+                source={require('../../../assets/images/logo/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </Animated.View>
 
             {/* Form */}
             <Animated.View
               style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-              <Text className="mb-1 text-3xl font-bold text-white">Create Account</Text>
-              <Text className="mb-7 text-sm text-[#9CA3AF]">Sign up to get started</Text>
-
-              {/* Full name */}
-              <Text className="mb-2 text-sm font-medium text-white">Full Name</Text>
-              <View style={[styles.inputWrap, nameError && styles.inputError]}>
-                <User
-                  size={18}
-                  color={nameError ? COLORS.accent : COLORS.textSecondary}
-                  style={styles.icon}
-                />
-                <TextInput
-                  value={name}
-                  onChangeText={(t) => {
-                    setName(t);
-                    setNameError(false);
-                  }}
-                  placeholder="Your name"
-                  placeholderTextColor={COLORS.textSecondary}
-                  style={styles.input}
-                />
-              </View>
+              <Text className="mb-2 text-center text-[22px] leading-10.5 font-bold text-white">
+                Sign up for an account
+              </Text>
+              <Text className="mb-8 text-center text-base leading-7 text-[#9CA3AF]">
+                Enter your email and password for login
+              </Text>
 
               {/* Email */}
-              <Text className="mt-5 mb-2 text-sm font-medium text-white">Email</Text>
-              <View style={[styles.inputWrap, emailError && styles.inputError]}>
+              <Text className="mb-2 text-sm font-medium text-white">Email</Text>
+              <View style={[styles.inputWrap, showEmailError && styles.inputError]}>
                 <Mail
                   size={18}
-                  color={emailError ? COLORS.accent : COLORS.textSecondary}
+                  color={showEmailError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
                   value={email}
                   onChangeText={(t) => {
                     setEmail(t);
-                    setEmailError(false);
+                    if (emailError) {
+                      setEmailError(false);
+                    }
                   }}
                   placeholder="Your email"
                   placeholderTextColor={COLORS.textSecondary}
@@ -114,20 +117,54 @@ export default function RegisterScreen() {
                   style={styles.input}
                 />
               </View>
+              {showEmailError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">Enter a valid email address.</Text>
+              ) : null}
+
+              {/* Phone */}
+              <Text className="mt-5 mb-2 text-sm font-medium text-white">Phone Number</Text>
+              <View style={[styles.inputWrap, showPhoneError && styles.inputError]}>
+                <View style={styles.flagWrap}>
+                  <Text style={styles.flagText}>🇺🇸</Text>
+                </View>
+                <Phone
+                  size={18}
+                  color={showPhoneError ? INVALID_BORDER : COLORS.textSecondary}
+                  style={styles.icon}
+                />
+                <TextInput
+                  value={phone}
+                  onChangeText={(t) => {
+                    setPhone(t);
+                    if (phoneError) {
+                      setPhoneError(false);
+                    }
+                  }}
+                  placeholder="+1 111-222-3344"
+                  placeholderTextColor={COLORS.textSecondary}
+                  keyboardType="phone-pad"
+                  style={styles.input}
+                />
+              </View>
+              {showPhoneError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">Enter a valid phone number.</Text>
+              ) : null}
 
               {/* Password */}
               <Text className="mt-5 mb-2 text-sm font-medium text-white">Password</Text>
-              <View style={[styles.inputWrap, passwordError && styles.inputError]}>
+              <View style={[styles.inputWrap, showPasswordError && styles.inputError]}>
                 <Lock
                   size={18}
-                  color={passwordError ? COLORS.accent : COLORS.textSecondary}
+                  color={showPasswordError ? INVALID_BORDER : COLORS.textSecondary}
                   style={styles.icon}
                 />
                 <TextInput
                   value={password}
                   onChangeText={(t) => {
                     setPassword(t);
-                    setPasswordError(false);
+                    if (passwordError) {
+                      setPasswordError(false);
+                    }
                   }}
                   placeholder="Your password"
                   placeholderTextColor={COLORS.textSecondary}
@@ -145,19 +182,41 @@ export default function RegisterScreen() {
                   )}
                 </Pressable>
               </View>
+              {showPasswordError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  Password must be at least 6 characters.
+                </Text>
+              ) : null}
+
+              <View className="mt-4 mb-7 flex-row items-center justify-between">
+                <Pressable
+                  className="flex-row items-center gap-2"
+                  onPress={() => setRememberMe((value) => !value)}>
+                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                    {rememberMe ? <Text style={styles.checkmark}>✓</Text> : null}
+                  </View>
+                  <Text className="text-sm text-white">Remember me</Text>
+                </Pressable>
+
+                <Link href="/(auth)/forgot-password" asChild>
+                  <Pressable>
+                    <Text className="text-sm font-medium text-[#FEA08F]">Forgot password?</Text>
+                  </Pressable>
+                </Link>
+              </View>
 
               {/* Submit */}
               <Pressable
                 style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
                 onPress={handleRegister}>
-                <Text className="text-base font-bold text-[#0D1117]">Register</Text>
+                <Text className="text-base font-bold text-[#0D1117]">Sign Up</Text>
               </Pressable>
 
               <View className="mt-6 flex-row items-center justify-center">
-                <Text className="text-sm text-[#9CA3AF]">Already have an account? </Text>
+                <Text className="text-sm text-white">Have an account? </Text>
                 <Link href="/(auth)/login" asChild>
                   <Pressable>
-                    <Text className="text-sm font-semibold text-[#EF4444]">Login</Text>
+                    <Text className="text-sm font-semibold text-[#FEA08F]">Login</Text>
                   </Pressable>
                 </Link>
               </View>
@@ -179,26 +238,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoSection: { alignItems: 'center', marginBottom: 36, marginTop: 16 },
-  logoRing: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2.5,
-    borderColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  logoInner: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#FFF' },
-  logoDot: {
-    position: 'absolute',
-    bottom: 8,
-    right: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFF',
+  logoSection: { alignItems: 'center', marginBottom: 26, marginTop: 16 },
+  logoImage: {
+    width: 185,
+    height: 85,
   },
   card: { width: '100%' },
   inputWrap: {
@@ -211,10 +254,38 @@ const styles = StyleSheet.create({
     height: 52,
     paddingHorizontal: 14,
   },
-  inputError: { borderColor: COLORS.accent },
+  inputError: { borderColor: INVALID_BORDER },
+  flagWrap: {
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flagText: {
+    fontSize: 20,
+  },
   icon: { marginRight: 10 },
   input: { flex: 1, color: COLORS.textPrimary, fontSize: 14 },
   eyeBtn: { paddingLeft: 8 },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: INVALID_BORDER,
+    borderColor: INVALID_BORDER,
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
   btn: {
     width: '100%',
     height: 54,
@@ -222,7 +293,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 28,
   },
   btnPressed: { opacity: 0.85 },
 });
