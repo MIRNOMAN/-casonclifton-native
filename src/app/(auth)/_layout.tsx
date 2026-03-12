@@ -1,7 +1,14 @@
-import React from 'react'
+import { Stack } from 'expo-router';
+import { COLORS } from '../../constants/colors';
 
-export default function _layout() {
+export default function AuthLayout() {
   return (
-    <div>_layout</div>
-  )
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: COLORS.background },
+        animation: 'fade_from_bottom',
+      }}
+    />
+  );
 }

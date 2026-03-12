@@ -12,13 +12,18 @@
 
   --spacing-hairline: hairlineWidth();
 
-  /* Brand / project colors */
-  --color-onboarding-accent: #7c3aed;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-surface: #f9fafb;
-  --color-input-border: #e5e7eb;
-  --color-screen-bg: #ffffff;
+  /* ── Brand / design-system colors (Crestcon dark theme) ── */
+  --color-bg: #0d1117; /* page background          */
+  --color-surface: #161d2e; /* card / input background  */
+  --color-surface-2: #1e2740; /* pressed / hover surface  */
+  --color-input-border: #2a3448; /* input border             */
+  --color-text-primary: #ffffff; /* primary text             */
+  --color-text-secondary: #9ca3af; /* muted / placeholder text */
+  --color-accent: #ef4444; /* red links & error states */
+  --color-btn: #ffffff; /* login button background  */
+  --color-btn-text: #0d1117; /* login button label       */
+  --color-screen-bg: #0d1117; /* alias for background     */
+  --color-onboarding-accent: #ef4444;
 }
 
 @source "../";
