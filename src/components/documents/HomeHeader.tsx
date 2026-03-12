@@ -1,4 +1,4 @@
-import { Bell, MapPin } from 'lucide-react-native';
+import { Bell, Mail, MailCheck, MapPin } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -12,15 +12,15 @@ export function HomeHeader() {
         <View>
           <Text style={styles.greeting}>Hi, Andre Dew!</Text>
           <View style={styles.locationRow}>
-            <MapPin size={14} color="#FFFFFF" fill="#FFFFFF" />
-            <Text style={styles.location}>Portuguese (Brazil)</Text>
+            <Mail size={12} color="#FFFFFF"  />
+            <Text style={styles.location}>karom@gmail.com</Text>
           </View>
         </View>
       </View>
 
-      <Pressable style={styles.notificationButton}>
+      {/* <Pressable style={styles.notificationButton}>
         <Bell size={18} color="#FFFFFF" />
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 }
