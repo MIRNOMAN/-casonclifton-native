@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 16,      
     fontWeight: '700',
     marginBottom: 2,
   },
