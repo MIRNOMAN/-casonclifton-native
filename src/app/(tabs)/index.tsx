@@ -1,10 +1,10 @@
 import ScreenContainer from '@/components/ScreenContainer';
-import { Text } from '@/components/ui/text';
 import React from 'react';
+import { Text } from 'react-native';
 
 const Index = () => {
   return (
-    <ScreenContainer useSafeArea>
+    <ScreenContainer>
       <Text>Welcome Back!</Text>
     </ScreenContainer>
   );
