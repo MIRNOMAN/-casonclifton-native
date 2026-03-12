@@ -1,13 +1,6 @@
-import ScreenContainer from '@/components/ScreenContainer';
+import { DocumentsScreen } from '@/components/documents/DocumentsScreen';
 import React from 'react';
-import { Text } from 'react-native';
 
-const Index = () => {
-  return (
-    <ScreenContainer>
-      <Text>Welcome Back!</Text>
-    </ScreenContainer>
-  );
-};
-
-export default Index;
+export default function HomeTabScreen() {
+  return <DocumentsScreen mode="home" />;
+}

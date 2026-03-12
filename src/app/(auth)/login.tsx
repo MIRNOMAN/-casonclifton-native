@@ -71,6 +71,8 @@ export default function LoginScreen() {
 
     if (isEmailEmpty || isEmailFormatInvalid || isPasswordTooShort) return;
     // TODO: dispatch login action
+
+    router.replace('/(tabs)');
   };
 
   return (
