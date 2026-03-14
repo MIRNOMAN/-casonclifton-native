@@ -10,9 +10,15 @@ import { DocumentCategoryFilter, DocumentItem } from '@/features/documents/docum
 
 type DocumentsScreenProps = {
   mode: 'home' | 'favorite';
+  userRole?: 'admin' | 'user';
+  headerVariant?: 'default' | 'admin';
 };
 
-export function DocumentsScreen({ mode }: DocumentsScreenProps) {
+export function DocumentsScreen({
+  mode,
+  userRole = 'user',
+  headerVariant = 'default',
+}: DocumentsScreenProps) {
   const { documents, toggleFavorite } = useDocuments();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<DocumentCategoryFilter>('All');
@@ -54,7 +60,7 @@ export function DocumentsScreen({ mode }: DocumentsScreenProps) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            <HomeHeader />
+            <HomeHeader userRole={userRole} variant={headerVariant} />
             <DocumentSearchBar value={search} onChangeText={setSearch} />
             <CategoryChips value={category} onChange={setCategory} />
           </>

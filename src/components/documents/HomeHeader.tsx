@@ -1,18 +1,68 @@
-import { Bell, Mail, MailCheck, MapPin } from 'lucide-react-native';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { ArrowLeft, Mail } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+// Use require for image import in React Native
+const avatarImage = require('../../../assets/images/avatar/avatar.jpg');
 
-export function HomeHeader() {
+type UserRole = 'admin' | 'user';
+
+type HomeHeaderProps = {
+  userRole?: UserRole;
+  variant?: 'default' | 'admin';
+};
+
+export function HomeHeader({ userRole = 'user', variant = 'default' }: HomeHeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleDashboardPress = () => {
+    setIsMenuOpen(false);
+    router.push('/admin-dashboard');
+  };
+
+  const handleBackPress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/(tabs)');
+  };
+
+  if (variant === 'admin') {
+    return (
+      <View style={styles.adminHeaderRow}>
+        <Pressable style={styles.backButton} onPress={handleBackPress}>
+          <ArrowLeft size={20} color="#FFFFFF" />
+        </Pressable>
+        <Text style={styles.adminTitle}>Admin Dashboard</Text>
+        <View style={styles.adminSpacer} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.row}>
       <View style={styles.profileRow}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>A</Text>
+        <View style={styles.avatarWrap}>
+          <Pressable style={styles.avatar} onPress={() => setIsMenuOpen((prev) => !prev)}>
+            <Image source={avatarImage} style={styles.avatarImage} />
+          </Pressable>
+
+          {isMenuOpen ? (
+            <View style={styles.dropdownMenu}>
+              {userRole === 'admin' ? (
+                <Pressable style={styles.dropdownItem} onPress={handleDashboardPress}>
+                  <Text style={styles.dropdownItemText}>Dashboard</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
         </View>
         <View>
           <Text style={styles.greeting}>Hi, Andre Dew!</Text>
           <View style={styles.locationRow}>
-            <Mail size={12} color="#FFFFFF"  />
+            <Mail size={12} color="#FFFFFF" />
             <Text style={styles.location}>karom@gmail.com</Text>
           </View>
         </View>
@@ -32,10 +82,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 22,
   },
+  adminHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 22,
+    minHeight: 32,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 32,
+  },
+  adminSpacer: {
+    width: 32,
+    height: 32,
+  },
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  avatarWrap: {
+    position: 'relative',
   },
   avatar: {
     width: 42,
@@ -54,7 +131,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     color: '#FFFFFF',
-    fontSize: 16,      
+    fontSize: 16,
     fontWeight: '700',
     marginBottom: 2,
   },
@@ -75,5 +152,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#182338',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 52,
+    left: 0,
+    minWidth: 140,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 6,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
+    zIndex: 20,
+  },
+  dropdownItem: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  dropdownItemText: {
+    color: '#111827',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
