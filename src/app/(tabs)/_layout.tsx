@@ -7,7 +7,11 @@ export default function TabLayout() {
   return (
     <DocumentsProvider>
       <Tabs
-        tabBar={(props) => <CustomTabBar {...props} />}
+        tabBar={(props) => {
+          const activeRoute = props.state.routes[props.state.index]?.name;
+          if (activeRoute === 'profile') return null;
+          return <CustomTabBar {...props} />;
+        }}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: '#000E26' },

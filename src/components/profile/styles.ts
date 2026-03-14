@@ -180,7 +180,7 @@ export const styles = StyleSheet.create({
     borderColor: '#253856',
     backgroundColor: 'rgba(255,255,255,0.03)',
     color: '#F0F5FF',
-    fontSize: 12,
+    fontSize: 14,
     paddingHorizontal: 12,
   },
   messageInput: {
@@ -208,7 +208,7 @@ export const styles = StyleSheet.create({
   },
   helpText: {
     color: '#91A3BF',
-    fontSize: 11,
+    fontSize: 13,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 16,
@@ -248,12 +248,12 @@ export const styles = StyleSheet.create({
   },
   policyParagraph: {
     color: '#A6B5CC',
-    fontSize: 12,
+    fontSize: 14,
     lineHeight: 19,
   },
   policyBullet: {
     color: '#A6B5CC',
-    fontSize: 12,
+    fontSize: 14,
     lineHeight: 19,
   },
   modalBackdrop: {

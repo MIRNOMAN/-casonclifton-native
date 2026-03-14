@@ -10,9 +10,10 @@ import PrivacyPolicyScreen from '@/components/profile/screens/PrivacyPolicyScree
 import TermsScreen from '@/components/profile/screens/TermsScreen';
 import { styles } from '@/components/profile/styles';
 import { ProfileFormValues, ScreenKey } from '@/components/profile/types';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -35,7 +36,7 @@ export default function ProfileFlow() {
     if (nextScreen === screen || isTransitioning.current) return;
 
     const isGoingBackToMenu = nextScreen === 'menu';
-    const fromX = isGoingBackToMenu ? -18 : 18;
+    const fromX = isGoingBackToMenu ? -12 : 12;
 
     isTransitioning.current = true;
     slideX.stopAnimation();
@@ -43,18 +44,18 @@ export default function ProfileFlow() {
 
     setScreen(nextScreen);
     slideX.setValue(fromX);
-    opacity.setValue(0);
+    opacity.setValue(0.92);
 
     Animated.parallel([
       Animated.timing(slideX, {
         toValue: 0,
-        duration: 280,
+        duration: isGoingBackToMenu ? 220 : 260,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 240,
+        duration: isGoingBackToMenu ? 200 : 220,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
@@ -68,6 +69,18 @@ export default function ProfileFlow() {
     opacity.setValue(1);
   }, [opacity, slideX]);
 
+  useFocusEffect(
+    useCallback(() => {
+      isTransitioning.current = false;
+      slideX.stopAnimation();
+      opacity.stopAnimation();
+      slideX.setValue(0);
+      opacity.setValue(1);
+      setDeleteModalVisible(false);
+      setScreen('menu');
+    }, [opacity, slideX])
+  );
+
   const handleLogout = () => {
     Alert.alert('Logged out', 'You have been logged out from this device.');
     router.replace('/(auth)/login');
@@ -79,28 +92,34 @@ export default function ProfileFlow() {
     router.replace('/(auth)/login');
   };
 
-  const headerBackVisible = screen !== 'menu';
+  const handleHeaderBack = () => {
+    if (isTransitioning.current) return;
+
+    if (screen !== 'menu') {
+      changeScreen('menu');
+      return;
+    }
+
+    // Let tab navigator handle transition to avoid double-animations and shake.
+    router.replace('/(tabs)');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.root}>
         <View style={styles.header}>
-          {headerBackVisible ? (
-            <Pressable
-              onPress={() => changeScreen('menu')}
-              style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}>
-              <BlurView
-                intensity={40}
-                tint="dark"
-                experimentalBlurMethod="dimezisBlurView"
-                style={StyleSheet.absoluteFill}
-                pointerEvents="none"
-              />
-              <ChevronLeft size={20} color="#E8F0FF" />
-            </Pressable>
-          ) : (
-            <View style={styles.backPlaceholder} />
-          )}
+          <Pressable
+            onPress={handleHeaderBack}
+            style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}>
+            <BlurView
+              intensity={40}
+              tint="dark"
+              experimentalBlurMethod="dimezisBlurView"
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <ChevronLeft size={20} color="#E8F0FF" />
+          </Pressable>
           <Text style={styles.headerTitle}>{SCREEN_TITLES[screen]}</Text>
           <View style={styles.backPlaceholder} />
         </View>
