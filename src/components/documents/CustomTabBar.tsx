@@ -1,7 +1,8 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
 import { Heart, Home, UserCircle2 } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 type CustomTabBarItemProps = {
   isFocused: boolean;
@@ -62,6 +63,14 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
   return (
     <View style={styles.wrapper}>
       <View style={styles.bar}>
+        <BlurView
+          intensity={52}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <View style={styles.barOverlay} pointerEvents="none" />
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const options = descriptors[route.key]?.options;
@@ -101,7 +110,10 @@ const styles = StyleSheet.create({
   bar: {
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(82, 92, 108, 0.86)',
+    backgroundColor: '#1F232A',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -111,6 +123,10 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
     elevation: 14,
+  },
+  barOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(16, 26, 44, 0.24)',
   },
   slot: {
     minWidth: 54,
