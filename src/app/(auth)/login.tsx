@@ -17,17 +17,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import { Link, router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { useCreateUserLoginMutation } from '@/redux/api/userApi';
+import { setUser } from '@/redux/authSlice';
+import { useAppDispatch } from '@/redux/store';
+import { toast } from 'sonner-native';
 
 const INVALID_BORDER = '#FEA08F';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
+  const dispatch = useAppDispatch();
+  const [createUserLogin, { isLoading }] = useCreateUserLoginMutation();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const isEmailInvalid = email.length > 0 && !EMAIL_REGEX.test(email.trim());
   const isPasswordInvalid = password.length > 0 && password.length < 6;
@@ -61,18 +69,48 @@ export default function LoginScreen() {
     ]).start();
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const isEmailEmpty = email.trim() === '';
     const isEmailFormatInvalid = !EMAIL_REGEX.test(email.trim());
     const isPasswordTooShort = password.trim().length < 6;
 
     setEmailError(isEmailEmpty || isEmailFormatInvalid);
     setPasswordError(isPasswordTooShort);
+    setApiError('');
 
     if (isEmailEmpty || isEmailFormatInvalid || isPasswordTooShort) return;
-    // TODO: dispatch login action
 
-    router.replace('/(tabs)');
+    try {
+      const response = await createUserLogin({
+        email: email.trim(),
+        password,
+        rememberMe,
+      }).unwrap();
+
+      dispatch(
+        setUser({
+          role: response.data.role,
+          accessToken: response.data.accessToken,
+          user: {
+            id: response.data.id,
+            name: response.data.name,
+            email: response.data.email,
+          },
+        })
+      );
+
+      console.log('Login successful:', response.data);
+      toast.success('User logged in successfully');
+
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.error ||
+        'Login failed. Please check your email and password.';
+      setApiError(message);
+      toast.error(message);
+    }
   };
 
   return (
@@ -173,6 +211,8 @@ export default function LoginScreen() {
                 </Text>
               ) : null}
 
+              {apiError ? <Text className="mt-3 text-xs text-[#FEA08F]">{apiError}</Text> : null}
+
               {/* Remember me + Forgot password */}
               <View className="mt-4 mb-7 flex-row items-center justify-between">
                 <Pressable
@@ -193,9 +233,12 @@ export default function LoginScreen() {
 
               {/* Login button */}
               <Pressable
+                disabled={isLoading}
                 onPress={handleLogin}
                 style={({ pressed }) => [styles.loginBtn, pressed && styles.loginBtnPressed]}>
-                <Text className="text-base font-bold text-[#0D1117]">Login</Text>
+                <Text className="text-base font-bold text-[#0D1117]">
+                  {isLoading ? 'Logging in...' : 'Login'}
+                </Text>
               </Pressable>
 
               {/* Register link */}

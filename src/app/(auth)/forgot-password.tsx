@@ -7,22 +7,28 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableWithoutFeedback,
   View,
-  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mail, ChevronLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { useUserForgotPasswordMutation } from '@/redux/api/userApi';
+import { setForgotPasswordEmail } from '@/redux/authSlice';
+import { useAppDispatch } from '@/redux/store';
+import { toast } from 'sonner-native';
 
 const INVALID_BORDER = '#FEA08F';
-const EMAIL_OR_PHONE_REGEX = /^(?:[^\s@]+@[^\s@]+\.[^\s@]+|\+?[0-9]{8,15})$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
+  const dispatch = useAppDispatch();
+  const [userForgotPassword, { isLoading }] = useUserForgotPasswordMutation();
+
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState(false);
-  const isEmailInvalid = email.length > 0 && !EMAIL_OR_PHONE_REGEX.test(email.trim());
+  const [apiError, setApiError] = useState('');
+  const isEmailInvalid = email.length > 0 && !EMAIL_REGEX.test(email.trim());
   const showEmailError = emailError || isEmailInvalid;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -35,16 +41,29 @@ export default function ForgotPasswordScreen() {
     ]).start();
   }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const value = email.trim();
-    if (value === '' || !EMAIL_OR_PHONE_REGEX.test(value)) {
+    if (value === '' || !EMAIL_REGEX.test(value)) {
       setEmailError(true);
       return;
     }
-    router.push({
-      pathname: '/(auth)/forgot-otp',
-      params: { contact: value },
-    });
+
+    setApiError('');
+
+    try {
+      const response = await userForgotPassword({ email: value }).unwrap();
+      dispatch(setForgotPasswordEmail(value));
+      toast.success(response.message || 'Password reset code sent successfully.');
+      router.push({
+        pathname: '/(auth)/forgot-otp',
+        params: { contact: value },
+      });
+    } catch (error: any) {
+      const message =
+        error?.data?.message || error?.error || 'Failed to send OTP. Please try again.';
+      setApiError(message);
+      toast.error(message);
+    }
   };
 
   return (
@@ -52,61 +71,59 @@ export default function ForgotPasswordScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <View style={styles.container}>
-            {/* Back */}
-            <Pressable style={styles.backBtn} onPress={() => router.replace('/(auth)/login')}>
-              <ChevronLeft size={24} color={COLORS.textPrimary} />
+        <View style={styles.container}>
+          {/* Back */}
+          <Pressable style={styles.backBtn} onPress={() => router.replace('/(auth)/login')}>
+            <ChevronLeft size={24} color={COLORS.textPrimary} />
+          </Pressable>
+
+          <Animated.View
+            style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <Text className="mt-10 mb-3 text-center text-[34px] leading-9.5 font-bold text-white">
+              Forgot Password?
+            </Text>
+            <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
+              Please insert your email or number phone{`\n`}to send link reset password
+            </Text>
+
+            <Text className="mb-2 text-sm font-medium text-white">Email</Text>
+            <View style={[styles.inputWrap, showEmailError && styles.inputError]}>
+              <Mail
+                size={18}
+                color={showEmailError ? INVALID_BORDER : COLORS.textSecondary}
+                style={styles.icon}
+              />
+              <TextInput
+                value={email}
+                onChangeText={(t) => {
+                  setEmail(t);
+                  if (emailError) {
+                    setEmailError(false);
+                  }
+                }}
+                placeholder="Enter your email"
+                placeholderTextColor={COLORS.textSecondary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </View>
+            {showEmailError ? (
+              <Text className="mt-2 text-xs text-[#FEA08F]">Enter a valid email address.</Text>
+            ) : null}
+
+            {apiError ? <Text className="mt-2 text-xs text-[#FEA08F]">{apiError}</Text> : null}
+
+            <Pressable
+              disabled={isLoading}
+              style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
+              onPress={handleSubmit}>
+              <Text className="text-base font-bold text-[#0D1117]">
+                {isLoading ? 'Sending...' : 'Send Code'}
+              </Text>
             </Pressable>
-
-            <Animated.View
-              style={[
-                styles.content,
-                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-              ]}>
-              <Text className="mb-3 text-center text-[34px] mt-10 leading-9.5 font-bold text-white">
-                Forgot Password?
-              </Text>
-              <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
-                Please insert your email or number phone{`\n`}to send link reset password
-              </Text>
-
-              <Text className="mb-2 text-sm font-medium text-white">Email</Text>
-              <View style={[styles.inputWrap, showEmailError && styles.inputError]}>
-                <Mail
-                  size={18}
-                  color={showEmailError ? INVALID_BORDER : COLORS.textSecondary}
-                  style={styles.icon}
-                />
-                <TextInput
-                  value={email}
-                  onChangeText={(t) => {
-                    setEmail(t);
-                    if (emailError) {
-                      setEmailError(false);
-                    }
-                  }}
-                  placeholder="Enter your email or phone"
-                  placeholderTextColor={COLORS.textSecondary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  style={styles.input}
-                />
-              </View>
-              {showEmailError ? (
-                <Text className="mt-2 text-xs text-[#FEA08F]">
-                  Enter a valid email address or phone number.
-                </Text>
-              ) : null}
-
-              <Pressable
-                style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-                onPress={handleSubmit}>
-                <Text className="text-base font-bold text-[#0D1117]">Send Code</Text>
-              </Pressable>
-            </Animated.View>
-          </View>
-        </TouchableWithoutFeedback>
+          </Animated.View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
