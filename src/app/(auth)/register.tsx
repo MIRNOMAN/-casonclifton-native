@@ -14,9 +14,11 @@ import {
   Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Eye, EyeOff, Lock, Mail, Phone } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react-native';
 import { Link, router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { useCreateUserRegisterMutation } from '@/redux/api/userApi';
+import { toast } from 'sonner-native';
 
 const INVALID_BORDER = '#FEA08F';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,18 +29,25 @@ const isPhoneValid = (value: string) => {
 };
 
 export default function RegisterScreen() {
+  const [createUserRegister, { isLoading }] = useCreateUserRegisterMutation();
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [fullNameError, setFullNameError] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [phoneError, setPhoneError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [termsError, setTermsError] = useState(false);
+  const [apiError, setApiError] = useState('');
 
+  const isFullNameInvalid = fullName.length > 0 && fullName.trim().length < 2;
   const isEmailInvalid = email.length > 0 && !EMAIL_REGEX.test(email.trim());
   const isPhoneInvalid = phone.length > 0 && !isPhoneValid(phone);
   const isPasswordInvalid = password.length > 0 && password.trim().length < 6;
+  const showFullNameError = fullNameError || isFullNameInvalid;
   const showEmailError = emailError || isEmailInvalid;
   const showPhoneError = phoneError || isPhoneInvalid;
   const showPasswordError = passwordError || isPasswordInvalid;
@@ -53,18 +62,40 @@ export default function RegisterScreen() {
     ]).start();
   }, []);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    const fne = fullName.trim().length < 2;
     const ee = email.trim() === '' || !EMAIL_REGEX.test(email.trim());
     const pe = phone.trim() === '' || !isPhoneValid(phone);
     const pwe = password.trim().length < 6;
+    const te = !agreedTerms;
+    setFullNameError(fne);
     setEmailError(ee);
     setPhoneError(pe);
     setPasswordError(pwe);
-    if (ee || pe || pwe) return;
-    router.push({
-      pathname: '/(auth)/otp',
-      params: { email: email.trim() },
-    });
+    setTermsError(te);
+    setApiError('');
+    if (fne || ee || pe || pwe || te) return;
+
+    try {
+      const response = await createUserRegister({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phoneNumber: phone.trim(),
+        password: password.trim(),
+        isAgreeWithTerms: true,
+      }).unwrap();
+
+      toast.success(response.message || 'Registration successful. Verify your email.');
+      router.push({
+        pathname: '/(auth)/otp',
+        params: { email: email.trim() },
+      });
+    } catch (error: any) {
+      const message =
+        error?.data?.message || error?.error || 'Registration failed. Please try again.';
+      setApiError(message);
+      toast.error(message);
+    }
   };
 
   return (
@@ -94,8 +125,35 @@ export default function RegisterScreen() {
                 Sign up for an account
               </Text>
               <Text className="mb-8 text-center text-base leading-7 text-[#9CA3AF]">
-                Enter your email and password for login
+                Enter your details to create an account
               </Text>
+
+              {/* Full Name */}
+              <Text className="mb-2 text-sm font-medium text-white">Full Name</Text>
+              <View style={[styles.inputWrap, showFullNameError && styles.inputError]}>
+                <User
+                  size={18}
+                  color={showFullNameError ? INVALID_BORDER : COLORS.textSecondary}
+                  style={styles.icon}
+                />
+                <TextInput
+                  value={fullName}
+                  onChangeText={(t) => {
+                    setFullName(t);
+                    if (fullNameError) {
+                      setFullNameError(false);
+                    }
+                  }}
+                  placeholder="John Doe"
+                  placeholderTextColor={COLORS.textSecondary}
+                  style={styles.input}
+                />
+              </View>
+              {showFullNameError ? (
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  Name must be at least 2 characters.
+                </Text>
+              ) : null}
 
               {/* Email */}
               <Text className="mb-2 text-sm font-medium text-white">Email</Text>
@@ -191,28 +249,43 @@ export default function RegisterScreen() {
                 </Text>
               ) : null}
 
-              <View className="mt-4 mb-7 flex-row items-center justify-between">
+              {/* Terms Agreement */}
+              <View className="mt-5 mb-4 flex-row items-center gap-2">
                 <Pressable
-                  className="flex-row items-center gap-2"
-                  onPress={() => setRememberMe((value) => !value)}>
-                  <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                    {rememberMe ? <Text style={styles.checkmark}>✓</Text> : null}
+                  className="flex-1 flex-row items-center gap-2"
+                  onPress={() => {
+                    setAgreedTerms((value) => !value);
+                    if (termsError) {
+                      setTermsError(false);
+                    }
+                  }}>
+                  <View style={[styles.checkbox, agreedTerms && styles.checkboxChecked]}>
+                    {agreedTerms ? <Text style={styles.checkmark}>✓</Text> : null}
                   </View>
-                  <Text className="text-sm text-white">Remember me</Text>
+                  <Text className="text-xs text-white">
+                    I agree to the{' '}
+                    <Link href="/(auth)/aggrement" asChild>
+                      <Pressable>
+                        <Text className="font-semibold text-[#FEA08F]">Terms & Conditions</Text>
+                      </Pressable>
+                    </Link>
+                  </Text>
                 </Pressable>
-
-                <Link href="/(auth)/forgot-password" asChild>
-                  <Pressable>
-                    <Text className="text-sm font-medium text-[#FEA08F]">Forgot password?</Text>
-                  </Pressable>
-                </Link>
               </View>
+              {termsError ? (
+                <Text className="mb-4 text-xs text-[#FEA08F]">You must agree to the terms.</Text>
+              ) : null}
+
+              {apiError ? <Text className="mb-4 text-xs text-[#FEA08F]">{apiError}</Text> : null}
 
               {/* Submit */}
               <Pressable
+                disabled={isLoading}
                 style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
                 onPress={handleRegister}>
-                <Text className="text-base font-bold text-[#0D1117]">Sign Up</Text>
+                <Text className="text-base font-bold text-[#0D1117]">
+                  {isLoading ? 'Creating Account...' : 'Sign Up'}
+                </Text>
               </Pressable>
 
               <View className="mt-6 flex-row items-center justify-center">

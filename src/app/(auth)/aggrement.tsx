@@ -42,7 +42,7 @@ export default function AggrementScreen() {
 
   const handleContinue = () => {
     if (!accepted) return;
-    router.replace('/(tabs)');
+    router.replace('/(auth)/login');
   };
 
   return (

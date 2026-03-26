@@ -10,7 +10,9 @@ type LoginRequest = {
 type RegisterRequest = {
   email: string;
   fullName: string;
+  phoneNumber: string;
   password: string;
+  isAgreeWithTerms?: boolean;
 };
 
 type ResetPasswordRequest = {
@@ -27,6 +29,15 @@ type ForgotPasswordRequest = {
 type ForgotOtpRequest = {
   email: string;
   otp: string;
+};
+
+type RegisterOtpVerificationRequest = {
+  email: string;
+  otp: string;
+};
+
+type ResendOtpRequest = {
+  email: string;
 };
 
 export type LoginResponse = {
@@ -109,6 +120,31 @@ export type ResetPasswordResponse = {
   };
 };
 
+export type RegisterOtpVerificationResponse = {
+  success?: boolean;
+  statusCode?: number;
+  message?: string;
+  data?: {
+    message?: string;
+    user?: {
+      id?: string;
+      email?: string;
+      fullName?: string;
+      isAccountVerified?: boolean;
+    };
+  };
+};
+
+export type ResendOtpResponse = {
+  success?: boolean;
+  statusCode?: number;
+  message?: string;
+  data?: {
+    message?: string;
+    email?: string;
+  };
+};
+
 const authApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (build) => ({
@@ -124,7 +160,10 @@ const authApi = baseApi.injectEndpoints({
       invalidatesTags: ['Auth'],
     }),
 
-    registerOtpVerification: build.mutation({
+    registerOtpVerification: build.mutation<
+      RegisterOtpVerificationResponse,
+      RegisterOtpVerificationRequest
+    >({
       query: (data) => {
         return {
           url: `/auth/verify-otp`,
@@ -233,6 +272,16 @@ const authApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Auth'],
     }),
+    resendOtp: build.mutation<ResendOtpResponse, ResendOtpRequest>({
+      query: (data) => {
+        return {
+          url: `/auth/resend-otp`,
+          method: 'POST',
+          body: data,
+        };
+      },
+      invalidatesTags: ['Auth'],
+    }),
   }),
 });
 
@@ -248,4 +297,5 @@ export const {
   useForgotOtpSendMutation,
   useRegisterOtpVerificationMutation,
   useUpdateChangePasswordMutation,
+  useResendOtpMutation,
 } = authApi;

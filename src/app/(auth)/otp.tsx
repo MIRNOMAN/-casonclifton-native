@@ -16,16 +16,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { useRegisterOtpVerificationMutation, useResendOtpMutation } from '@/redux/api/userApi';
+import { toast } from 'sonner-native';
 
-const OTP_LENGTH = 4;
+const OTP_LENGTH = 6;
 const ACTIVE_BORDER = '#FEA08F';
 
 export default function OtpScreen() {
   const { email } = useLocalSearchParams<{ email?: string }>();
+  const [registerOtpVerification, { isLoading }] = useRegisterOtpVerificationMutation();
+  const [resendOtp, { isLoading: isResending }] = useResendOtpMutation();
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [hasError, setHasError] = useState(false);
+  const [apiError, setApiError] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const normalizedEmail = (email || '').trim();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -48,19 +54,13 @@ export default function OtpScreen() {
     newOtp[index] = value.slice(-1);
     setOtp(newOtp);
     setHasError(false);
+    setApiError('');
     if (value && index < OTP_LENGTH - 1) {
       setActiveIndex(index + 1);
       inputRefs.current[index + 1]?.focus();
       return;
     }
-
     setActiveIndex(index);
-
-    if (newOtp.every((digit) => digit !== '')) {
-      setTimeout(() => {
-        router.push('/(auth)/aggrement');
-      }, 120);
-    }
   };
 
   const handleKeyPress = (key: string, index: number) => {
@@ -70,12 +70,63 @@ export default function OtpScreen() {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    if (!normalizedEmail) {
+      const message = 'Email not found. Please go back and register again.';
+      setApiError(message);
+      toast.error(message);
+      return;
+    }
+
     if (otp.some((d) => d === '')) {
       setHasError(true);
       return;
     }
-    router.push('/(auth)/aggrement');
+
+    setApiError('');
+
+    try {
+      const otpCode = otp.join('');
+      const response = await registerOtpVerification({
+        email: normalizedEmail,
+        otp: otpCode,
+      }).unwrap();
+
+      toast.success(response.message || 'Email verified successfully.');
+      router.replace('/(auth)/aggrement');
+    } catch (error: any) {
+      const message =
+        error?.data?.message || error?.error || 'OTP verification failed. Please try again.';
+      setApiError(message);
+      setHasError(true);
+      toast.error(message);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!normalizedEmail) {
+      const message = 'Email not found. Please go back.';
+      setApiError(message);
+      toast.error(message);
+      return;
+    }
+
+    try {
+      const response = await resendOtp({
+        email: normalizedEmail,
+      }).unwrap();
+
+      toast.success(response?.data?.message || response?.message || 'OTP resent successfully.');
+      setOtp(Array(OTP_LENGTH).fill(''));
+      setHasError(false);
+      setApiError('');
+      inputRefs.current[0]?.focus();
+    } catch (error: any) {
+      const message =
+        error?.data?.message || error?.error || 'Failed to resend OTP. Please try again.';
+      setApiError(message);
+      toast.error(message);
+    }
   };
 
   return (
@@ -105,7 +156,7 @@ export default function OtpScreen() {
               </Text>
               <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
                 We have sent code to your email{`\n`}
-                {email || 'kevinjulio@gmail.com'}{' '}
+                {normalizedEmail || 'your-email@example.com'}
               </Text>
 
               {/* OTP boxes */}
@@ -133,10 +184,25 @@ export default function OtpScreen() {
                 ))}
               </View>
 
+              {apiError ? (
+                <Text className="mt-4 text-center text-xs text-[#FEA08F]">{apiError}</Text>
+              ) : null}
+
+              <Pressable
+                disabled={isLoading}
+                style={({ pressed }) => [styles.verifyBtn, pressed && styles.verifyBtnPressed]}
+                onPress={handleVerify}>
+                <Text className="text-base font-bold text-[#0D1117]">
+                  {isLoading ? 'Verifying...' : 'Verify Code'}
+                </Text>
+              </Pressable>
+
               <View className="mt-6 flex-row items-center justify-center">
                 <Text className="text-sm text-[#9CA3AF]">Didn't receive the code? </Text>
-                <Pressable>
-                  <Text className="text-sm font-semibold text-[#FEA08F]">Resend</Text>
+                <Pressable onPress={handleResend} disabled={isResending}>
+                  <Text className="text-sm font-semibold text-[#FEA08F]">
+                    {isResending ? 'Sending...' : 'Resend'}
+                  </Text>
                 </Pressable>
               </View>
             </Animated.View>
@@ -186,4 +252,14 @@ const styles = StyleSheet.create({
   otpBoxFilled: { borderColor: COLORS.border },
   otpBoxActive: { borderColor: ACTIVE_BORDER },
   otpBoxError: { borderColor: ACTIVE_BORDER },
+  verifyBtn: {
+    width: '100%',
+    height: 54,
+    backgroundColor: COLORS.btn,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 28,
+  },
+  verifyBtnPressed: { opacity: 0.85 },
 });
