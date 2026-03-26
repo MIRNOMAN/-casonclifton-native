@@ -15,19 +15,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, Eye, EyeOff, Lock } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
+import { useUserResetPasswordMutation } from '@/redux/api/userApi';
+import {
+  clearForgotPasswordContext,
+  selectForgotPasswordEmail,
+  selectForgotPasswordResetToken,
+} from '@/redux/authSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/store';
+import { toast } from 'sonner-native';
 
 const INVALID_BORDER = '#FEA08F';
 
 export default function ResetPasswordScreen() {
+  const dispatch = useAppDispatch();
+  const storedEmail = useAppSelector(selectForgotPasswordEmail);
+  const storedResetToken = useAppSelector(selectForgotPasswordResetToken);
+  const [userResetPassword, { isLoading }] = useUserResetPasswordMutation();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [confirmError, setConfirmError] = useState(false);
+  const [apiError, setApiError] = useState('');
+
+  const normalizedEmail = (storedEmail || '').trim();
+  const normalizedToken = (storedResetToken || '').trim();
 
   const isPasswordInvalid = password.length > 0 && password.trim().length < 6;
-  const isConfirmInvalid = confirm.length > 0 && (confirm.trim().length < 6 || confirm !== password);
+  const isConfirmInvalid =
+    confirm.length > 0 && (confirm.trim().length < 6 || confirm !== password);
   const showPasswordError = passwordError || isPasswordInvalid;
   const showConfirmError = confirmError || isConfirmInvalid;
 
@@ -41,13 +58,53 @@ export default function ResetPasswordScreen() {
     ]).start();
   }, []);
 
-  const handleReset = () => {
+  const handleReset = async () => {
     const pe = password.trim().length < 6;
     const ce = confirm.trim().length < 6 || confirm !== password;
     setPasswordError(pe);
     setConfirmError(ce);
+    setApiError('');
     if (pe || ce) return;
-    router.replace('/(auth)/reset-success');
+
+    if (!normalizedEmail) {
+      const message = 'Email missing. Please restart forgot password flow.';
+      setApiError(message);
+      toast.error(message);
+      return;
+    }
+
+    if (!normalizedToken) {
+      const message = 'Reset token missing or expired. Please verify OTP again.';
+      setApiError(message);
+      toast.error(message);
+      return;
+    }
+
+    try {
+      const response = await userResetPassword({
+        email: normalizedEmail,
+        newPassword: password.trim(),
+        confirmPassword: confirm.trim(),
+        token: normalizedToken,
+      }).unwrap();
+
+      const successMessage =
+        response?.data?.message || response?.message || 'Password reset successfully.';
+      dispatch(clearForgotPasswordContext());
+
+      router.replace({
+        pathname: '/(auth)/reset-success',
+        params: {
+          message: successMessage,
+          email: normalizedEmail,
+        },
+      });
+    } catch (error: any) {
+      const message =
+        error?.data?.message || error?.error || 'Failed to reset password. Please try again.';
+      setApiError(message);
+      toast.error(message);
+    }
   };
 
   return (
@@ -66,8 +123,7 @@ export default function ResetPasswordScreen() {
                 styles.content,
                 { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
               ]}>
-             
-              <Text className="mb-4 text-center text-[32px] mt-10 font-bold leading-9.5 text-white">
+              <Text className="mt-10 mb-4 text-center text-[32px] leading-9.5 font-bold text-white">
                 Create New Password
               </Text>
               <Text className="mb-10 text-center text-base leading-7 text-[#9CA3AF]">
@@ -107,7 +163,9 @@ export default function ResetPasswordScreen() {
                 </Pressable>
               </View>
               {showPasswordError ? (
-                <Text className="mt-2 text-xs text-[#FEA08F]">Password must be at least 6 characters.</Text>
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  Password must be at least 6 characters.
+                </Text>
               ) : null}
 
               {/* Confirm password */}
@@ -150,10 +208,15 @@ export default function ResetPasswordScreen() {
                 </Text>
               ) : null}
 
+              {apiError ? <Text className="mt-2 text-xs text-[#FEA08F]">{apiError}</Text> : null}
+
               <Pressable
+                disabled={isLoading}
                 style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
                 onPress={handleReset}>
-                <Text className="text-base font-bold text-[#0D1117]">Change Password</Text>
+                <Text className="text-base font-bold text-[#0D1117]">
+                  {isLoading ? 'Changing...' : 'Change Password'}
+                </Text>
               </Pressable>
             </Animated.View>
           </View>

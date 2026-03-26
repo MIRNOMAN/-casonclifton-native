@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryChips } from './CategoryChips';
 import { DocumentCard } from './DocumentCard';
 import { DocumentSearchBar } from './DocumentSearchBar';
@@ -19,6 +20,7 @@ export function DocumentsScreen({
   userRole = 'user',
   headerVariant = 'default',
 }: DocumentsScreenProps) {
+  const insets = useSafeAreaInsets();
   const { documents, toggleFavorite } = useDocuments();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<DocumentCategoryFilter>('All');
@@ -51,7 +53,7 @@ export function DocumentsScreen({
   );
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <FlatList
         data={filteredDocuments}
         keyExtractor={(item) => item.id}

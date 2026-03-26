@@ -15,6 +15,7 @@ type AuthState = {
   token: string | null;
   user: AuthUser | null;
   forgotPasswordEmail: string | null;
+  forgotPasswordResetToken: string | null;
   isAuthenticated: boolean;
 };
 
@@ -23,6 +24,7 @@ const initialState: AuthState = {
   token: null,
   user: null,
   forgotPasswordEmail: null,
+  forgotPasswordResetToken: null,
   isAuthenticated: false,
 };
 
@@ -51,6 +53,7 @@ export const authSlice = createSlice({
       state.token = null;
       state.user = null;
       state.forgotPasswordEmail = null;
+      state.forgotPasswordResetToken = null;
       state.isAuthenticated = false;
     },
 
@@ -61,11 +64,40 @@ export const authSlice = createSlice({
     clearForgotPasswordEmail: (state) => {
       state.forgotPasswordEmail = null;
     },
+
+    setForgotPasswordResetToken: (state, action: PayloadAction<string>) => {
+      state.forgotPasswordResetToken = action.payload;
+    },
+
+    clearForgotPasswordResetToken: (state) => {
+      state.forgotPasswordResetToken = null;
+    },
+
+    setForgotPasswordContext: (
+      state,
+      action: PayloadAction<{ email: string; resetToken: string }>
+    ) => {
+      state.forgotPasswordEmail = action.payload.email;
+      state.forgotPasswordResetToken = action.payload.resetToken;
+    },
+
+    clearForgotPasswordContext: (state) => {
+      state.forgotPasswordEmail = null;
+      state.forgotPasswordResetToken = null;
+    },
   },
 });
 
-export const { setUser, logout, setForgotPasswordEmail, clearForgotPasswordEmail } =
-  authSlice.actions;
+export const {
+  setUser,
+  logout,
+  setForgotPasswordEmail,
+  clearForgotPasswordEmail,
+  setForgotPasswordResetToken,
+  clearForgotPasswordResetToken,
+  setForgotPasswordContext,
+  clearForgotPasswordContext,
+} = authSlice.actions;
 export default authSlice.reducer;
 
 // Selectors
@@ -73,4 +105,6 @@ export const selectCurrentToken = (state: RootState) => state.auth.token;
 export const selectCurrentRole = (state: RootState) => state.auth.role;
 export const selectCurrentUser = (state: RootState) => state.auth.user;
 export const selectForgotPasswordEmail = (state: RootState) => state.auth.forgotPasswordEmail;
+export const selectForgotPasswordResetToken = (state: RootState) =>
+  state.auth.forgotPasswordResetToken;
 export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;

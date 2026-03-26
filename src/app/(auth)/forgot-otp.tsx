@@ -14,14 +14,15 @@ import { ChevronLeft } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 import { useForgotOtpSendMutation, useUserForgotPasswordMutation } from '@/redux/api/userApi';
-import { selectForgotPasswordEmail } from '@/redux/authSlice';
-import { useAppSelector } from '@/redux/store';
+import { selectForgotPasswordEmail, setForgotPasswordContext } from '@/redux/authSlice';
+import { useAppDispatch, useAppSelector } from '@/redux/store';
 import { toast } from 'sonner-native';
 
 const OTP_LENGTH = 6;
 const INVALID_BORDER = '#FEA08F';
 
 export default function ForgotOtpScreen() {
+  const dispatch = useAppDispatch();
   const { contact } = useLocalSearchParams<{ contact?: string }>();
   const storedEmail = useAppSelector(selectForgotPasswordEmail);
   const [forgotOtpSend, { isLoading }] = useForgotOtpSendMutation();
@@ -89,9 +90,26 @@ export default function ForgotOtpScreen() {
       });
       toast.success(response.message || 'OTP verified successfully.');
 
+      const responseEmail = response?.data?.email?.trim() || normalizedContact;
+      const responseResetToken = response?.data?.resetToken?.trim();
+
+      if (!responseResetToken) {
+        const message = 'Reset token missing from OTP response. Please try again.';
+        setApiError(message);
+        toast.error(message);
+        return;
+      }
+
+      dispatch(
+        setForgotPasswordContext({
+          email: responseEmail,
+          resetToken: responseResetToken,
+        })
+      );
+
       router.push({
         pathname: '/(auth)/reset-password',
-        params: response?.data?.resetToken ? { resetToken: response.data.resetToken } : undefined,
+        params: undefined,
       });
     } catch (error: any) {
       const message =
@@ -217,7 +235,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },

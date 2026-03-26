@@ -1,10 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS } from '../../constants/colors';
 
 export default function ResetSuccessScreen() {
+  const { message, email } = useLocalSearchParams<{ message?: string; email?: string }>();
+
+  const successBody =
+    typeof message === 'string' && message.trim().length > 0
+      ? message
+      : 'Your password has been reset successfully.';
+
+  const normalizedEmail = typeof email === 'string' ? email.trim() : '';
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -38,8 +46,11 @@ export default function ResetSuccessScreen() {
             Password Reset!{'\n'}Successful
           </Text>
           <Text className="mb-12 text-center text-base leading-7 text-[#9CA3AF]">
-            Your password has been reset successfully.{'\n'}You can now log in with your new
-            password.
+            {successBody}
+            {'\n'}
+            {normalizedEmail
+              ? `You can now log in with ${normalizedEmail}.`
+              : 'You can now log in with your new password.'}
           </Text>
 
           <Pressable

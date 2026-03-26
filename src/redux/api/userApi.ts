@@ -14,8 +14,10 @@ type RegisterRequest = {
 };
 
 type ResetPasswordRequest = {
+  email: string;
   newPassword: string;
-  resetToken: string;
+  confirmPassword: string;
+  token: string;
 };
 
 type ForgotPasswordRequest = {
@@ -94,6 +96,16 @@ export type ForgotOtpResponse = {
   data?: {
     message?: string;
     resetToken?: string;
+    email?: string;
+  };
+};
+
+export type ResetPasswordResponse = {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data?: {
+    message?: string;
   };
 };
 
@@ -164,7 +176,7 @@ const authApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Auth'],
     }),
-    userResetPassword: build.mutation({
+    userResetPassword: build.mutation<ResetPasswordResponse, ResetPasswordRequest>({
       query: (data) => {
         return {
           url: `/auth/reset-password`,
