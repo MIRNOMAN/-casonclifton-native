@@ -84,10 +84,13 @@ export type GetMeUserResponse = {
     id?: string;
     fullName?: string;
     email?: string;
-    phone?: string;
-    profileImage?: string | null;
+    phoneNumber?: string;
+    dateOfBirth?: string;
+    gender?: string;
+    location?: string | null;
+    profilePhoto?: string | null;
     isAccountVerified?: boolean;
-    role?: 'USER';
+    role?: 'USER' | 'ADMIN' | 'SUPERADMIN';
   };
 };
 
@@ -246,11 +249,11 @@ const authApi = baseApi.injectEndpoints({
       providesTags: ['Auth'],
     }),
     updateMeUser: build.mutation({
-      query: (payload: { data: any; profile?: File }) => {
+      query: (payload: { data: any; profilePhoto?: File }) => {
         const formData = new FormData();
         formData.append('data', JSON.stringify(payload.data));
-        if (payload.profile) {
-          formData.append('image', payload.profile);
+        if (payload.profilePhoto) {
+          formData.append('profilePhoto', payload.profilePhoto as any);
         }
 
         return {

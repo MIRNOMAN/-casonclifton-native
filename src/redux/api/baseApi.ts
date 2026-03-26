@@ -17,7 +17,7 @@ const baseQuery = fetchBaseQuery({
     if (token) {
       const formattedToken = token.startsWith("Bearer ")
         ? token
-        : `Bearer ${token}`;
+        : `${token}`;
       headers.set("Authorization", formattedToken);
     }
 

@@ -24,4 +24,6 @@ export type ProfileFormValues = {
   dateOfBirth: string;
   sex: string;
   phoneNumber: string;
+  location: string;
+  profilePhotoUrl?: string | null;
 };

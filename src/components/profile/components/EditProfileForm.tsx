@@ -7,11 +7,38 @@ import PrimaryButton from './PrimaryButton';
 
 type EditProfileFormProps = {
   value: ProfileFormValues;
-  onSave: (next: ProfileFormValues) => void;
+  onSave: (next: ProfileFormValues) => Promise<void> | void;
+  saveLabel?: string;
 };
 
-export default function EditProfileForm({ value, onSave }: EditProfileFormProps) {
+export default function EditProfileForm({
+  value,
+  onSave,
+  saveLabel = 'Save',
+}: EditProfileFormProps) {
   const [draft, setDraft] = useState<ProfileFormValues>(value);
+
+  const handleDateOfBirthChange = (text: string) => {
+    const digitsOnly = text.replace(/\D/g, '').slice(0, 8);
+
+    if (digitsOnly.length <= 4) {
+      setDraft((prev) => ({ ...prev, dateOfBirth: digitsOnly }));
+      return;
+    }
+
+    if (digitsOnly.length <= 6) {
+      setDraft((prev) => ({
+        ...prev,
+        dateOfBirth: `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4)}`,
+      }));
+      return;
+    }
+
+    setDraft((prev) => ({
+      ...prev,
+      dateOfBirth: `${digitsOnly.slice(0, 4)}-${digitsOnly.slice(4, 6)}-${digitsOnly.slice(6)}`,
+    }));
+  };
 
   useEffect(() => {
     setDraft(value);
@@ -26,23 +53,25 @@ export default function EditProfileForm({ value, onSave }: EditProfileFormProps)
         style={styles.input}
       />
 
-      <InputLabel>Email</InputLabel>
+      <InputLabel>Location</InputLabel>
       <TextInput
-        value={draft.accountEmail}
-        onChangeText={(text) => setDraft((prev) => ({ ...prev, accountEmail: text }))}
-        autoCapitalize="none"
-        keyboardType="email-address"
+        value={draft.location}
+        onChangeText={(text) => setDraft((prev) => ({ ...prev, location: text }))}
         style={styles.input}
       />
 
       <InputLabel>Date of Birth</InputLabel>
       <TextInput
         value={draft.dateOfBirth}
-        onChangeText={(text) => setDraft((prev) => ({ ...prev, dateOfBirth: text }))}
+        onChangeText={handleDateOfBirthChange}
+        keyboardType="number-pad"
+        maxLength={10}
+        placeholder="YYYY-MM-DD"
+        placeholderTextColor="#7284A3"
         style={styles.input}
       />
 
-      <InputLabel>Sex</InputLabel>
+      <InputLabel>Gender</InputLabel>
       <TextInput
         value={draft.sex}
         onChangeText={(text) => setDraft((prev) => ({ ...prev, sex: text }))}
@@ -57,7 +86,7 @@ export default function EditProfileForm({ value, onSave }: EditProfileFormProps)
         style={styles.input}
       />
 
-      <PrimaryButton title="Save" onPress={() => onSave(draft)} />
+      <PrimaryButton title={saveLabel} onPress={() => onSave(draft)} />
     </>
   );
 }

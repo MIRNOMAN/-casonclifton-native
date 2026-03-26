@@ -25,7 +25,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const isPhoneValid = (value: string) => {
   const digits = value.replace(/\D/g, '');
-  return digits.length >= 10 && digits.length <= 15;
+  return digits.length >= 6;
 };
 
 export default function RegisterScreen() {
@@ -185,9 +185,6 @@ export default function RegisterScreen() {
               {/* Phone */}
               <Text className="mt-5 mb-2 text-sm font-medium text-white">Phone Number</Text>
               <View style={[styles.inputWrap, showPhoneError && styles.inputError]}>
-                <View style={styles.flagWrap}>
-                  <Text style={styles.flagText}>🇺🇸</Text>
-                </View>
                 <Phone
                   size={18}
                   color={showPhoneError ? INVALID_BORDER : COLORS.textSecondary}
@@ -208,7 +205,9 @@ export default function RegisterScreen() {
                 />
               </View>
               {showPhoneError ? (
-                <Text className="mt-2 text-xs text-[#FEA08F]">Enter a valid phone number.</Text>
+                <Text className="mt-2 text-xs text-[#FEA08F]">
+                  Enter a valid phone number with at least 6 digits.
+                </Text>
               ) : null}
 
               {/* Password */}
@@ -331,14 +330,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   inputError: { borderColor: INVALID_BORDER },
-  flagWrap: {
-    marginRight: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flagText: {
-    fontSize: 20,
-  },
   icon: { marginRight: 10 },
   input: { flex: 1, color: COLORS.textPrimary, fontSize: 14 },
   eyeBtn: { paddingLeft: 8 },

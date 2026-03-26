@@ -8,6 +8,8 @@ import { DocumentSearchBar } from './DocumentSearchBar';
 import { HomeHeader } from './HomeHeader';
 import { useDocuments } from '@/features/documents/documents-context';
 import { DocumentCategoryFilter, DocumentItem } from '@/features/documents/documents-data';
+import { selectCurrentRole } from '@/redux/authSlice';
+import { useAppSelector } from '@/redux/store';
 
 type DocumentsScreenProps = {
   mode: 'home' | 'favorite';
@@ -22,8 +24,17 @@ export function DocumentsScreen({
 }: DocumentsScreenProps) {
   const insets = useSafeAreaInsets();
   const { documents, toggleFavorite } = useDocuments();
+  const currentRole = useAppSelector(selectCurrentRole);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<DocumentCategoryFilter>('All');
+
+  const resolvedUserRole = useMemo(() => {
+    if (userRole === 'admin') {
+      return 'admin';
+    }
+
+    return currentRole === 'SUPERADMIN' ? 'admin' : 'user';
+  }, [currentRole, userRole]);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((document) => {
@@ -62,7 +73,7 @@ export function DocumentsScreen({
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            <HomeHeader userRole={userRole} variant={headerVariant} />
+            <HomeHeader userRole={resolvedUserRole} variant={headerVariant} />
             <DocumentSearchBar value={search} onChangeText={setSearch} />
             <CategoryChips value={category} onChange={setCategory} />
           </>

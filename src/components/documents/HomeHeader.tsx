@@ -2,6 +2,10 @@ import { router } from 'expo-router';
 import { ArrowLeft, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HomeHeaderSkeleton } from '@/components/skeleton/HomeHeaderSkeleton';
+import { useGetMeUserQuery } from '@/redux/api/userApi';
+import { selectCurrentRole, selectCurrentToken } from '@/redux/authSlice';
+import { useAppSelector } from '@/redux/store';
 // Use require for image import in React Native
 const avatarImage = require('../../../assets/images/avatar/avatar.jpg');
 
@@ -14,6 +18,19 @@ type HomeHeaderProps = {
 
 export function HomeHeader({ userRole = 'user', variant = 'default' }: HomeHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const currentRole = useAppSelector(selectCurrentRole);
+  const token = useAppSelector(selectCurrentToken);
+  const { data, isLoading, isFetching } = useGetMeUserQuery(undefined, {
+    skip: !token,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const shouldShowDashboard = currentRole === 'SUPERADMIN';
+
+  const fullName = data?.data?.fullName?.trim() || 'User';
+  const email = data?.data?.email || 'No email';
+  const profilePhoto = data?.data?.profilePhoto || null;
+  const profileImageSource = profilePhoto ? { uri: profilePhoto } : avatarImage;
 
   const handleDashboardPress = () => {
     setIsMenuOpen(false);
@@ -41,17 +58,21 @@ export function HomeHeader({ userRole = 'user', variant = 'default' }: HomeHeade
     );
   }
 
+  if ((isLoading || isFetching) && !data && !!token) {
+    return <HomeHeaderSkeleton variant={variant} />;
+  }
+
   return (
     <View style={styles.row}>
       <View style={styles.profileRow}>
         <View style={styles.avatarWrap}>
           <Pressable style={styles.avatar} onPress={() => setIsMenuOpen((prev) => !prev)}>
-            <Image source={avatarImage} style={styles.avatarImage} />
+            <Image source={profileImageSource} style={styles.avatarImage} />
           </Pressable>
 
           {isMenuOpen ? (
             <View style={styles.dropdownMenu}>
-              {userRole === 'admin' ? (
+              {shouldShowDashboard ? (
                 <Pressable style={styles.dropdownItem} onPress={handleDashboardPress}>
                   <Text style={styles.dropdownItemText}>Dashboard</Text>
                 </Pressable>
@@ -60,10 +81,10 @@ export function HomeHeader({ userRole = 'user', variant = 'default' }: HomeHeade
           ) : null}
         </View>
         <View>
-          <Text style={styles.greeting}>Hi, Andre Dew!</Text>
+          <Text style={styles.greeting}>Hi, {fullName}!</Text>
           <View style={styles.locationRow}>
             <Mail size={12} color="#FFFFFF" />
-            <Text style={styles.location}>karom@gmail.com</Text>
+            <Text style={styles.location}>{email}</Text>
           </View>
         </View>
       </View>

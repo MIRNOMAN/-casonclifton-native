@@ -10,6 +10,9 @@ import PrivacyPolicyScreen from '@/components/profile/screens/PrivacyPolicyScree
 import TermsScreen from '@/components/profile/screens/TermsScreen';
 import { styles } from '@/components/profile/styles';
 import { ProfileFormValues, ScreenKey } from '@/components/profile/types';
+import { useGetMeUserQuery, useUpdateMeUserMutation } from '@/redux/api/userApi';
+import { selectCurrentToken } from '@/redux/authSlice';
+import { useAppSelector } from '@/redux/store';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -18,14 +21,23 @@ import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileFlow() {
+  const token = useAppSelector(selectCurrentToken);
+  const { data: meResponse } = useGetMeUserQuery(undefined, {
+    skip: !token,
+    refetchOnMountOrArgChange: true,
+  });
+  const [updateMeUser, { isLoading: isSavingProfile }] = useUpdateMeUserMutation();
+
   const [screen, setScreen] = useState<ScreenKey>('menu');
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [profile, setProfile] = useState<ProfileFormValues>({
     fullName: 'Ahmed Hassan',
     accountEmail: 'superproglobaldubai@yastor.glog',
-    dateOfBirth: '12/06/1989',
+    dateOfBirth: '1989-06-12',
     sex: 'Male',
     phoneNumber: '97123456789030',
+    location: 'Dubai, UAE',
+    profilePhotoUrl: null,
   });
 
   const slideX = useRef(new Animated.Value(0)).current;
@@ -69,6 +81,25 @@ export default function ProfileFlow() {
     opacity.setValue(1);
   }, [opacity, slideX]);
 
+  useEffect(() => {
+    const meData = meResponse?.data;
+
+    if (!meData) {
+      return;
+    }
+
+    setProfile((prev) => ({
+      ...prev,
+      fullName: meData.fullName?.trim() || prev.fullName,
+      accountEmail: meData.email?.trim() || prev.accountEmail,
+      phoneNumber: meData.phoneNumber?.trim() || prev.phoneNumber,
+      dateOfBirth: meData.dateOfBirth?.trim() || prev.dateOfBirth,
+      sex: meData.gender?.trim() || prev.sex,
+      location: meData.location?.trim() || prev.location,
+      profilePhotoUrl: meData.profilePhoto || null,
+    }));
+  }, [meResponse]);
+
   useFocusEffect(
     useCallback(() => {
       isTransitioning.current = false;
@@ -102,6 +133,30 @@ export default function ProfileFlow() {
 
     // Let tab navigator handle transition to avoid double-animations and shake.
     router.replace('/(tabs)');
+  };
+
+  const handleProfileSave = async (next: ProfileFormValues) => {
+    try {
+      await updateMeUser({
+        data: {
+          fullName: next.fullName,
+          email: next.accountEmail,
+          phoneNumber: next.phoneNumber,
+          dateOfBirth: next.dateOfBirth,
+          gender: next.sex,
+          location: next.location,
+        },
+      }).unwrap();
+
+      setProfile(next);
+      Alert.alert('Saved', 'Account settings updated successfully.');
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.error ||
+        'Failed to update account settings. Please try again.';
+      Alert.alert('Update failed', message);
+    }
   };
 
   return (
@@ -139,7 +194,11 @@ export default function ProfileFlow() {
           {screen === 'help-support' ? <HelpSupportScreen /> : null}
           {screen === 'faqs' ? <FaqsScreen onNavigate={changeScreen} /> : null}
           {screen === 'account-settings' ? (
-            <AccountSettingsScreen profile={profile} onSave={setProfile} />
+            <AccountSettingsScreen
+              profile={profile}
+              onSave={handleProfileSave}
+              isSaving={isSavingProfile}
+            />
           ) : null}
           {screen === 'privacy-policy' ? <PrivacyPolicyScreen /> : null}
           {screen === 'terms' ? <TermsScreen /> : null}
