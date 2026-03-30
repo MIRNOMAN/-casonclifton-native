@@ -1,5 +1,5 @@
-import { BaseQueryApi } from "@reduxjs/toolkit/query";
-import { SVGProps } from "react";
+import { BaseQueryApi } from '@reduxjs/toolkit/query';
+import { SVGProps } from 'react';
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
   size?: number;
@@ -9,7 +9,7 @@ export type TUser = {
   id: string;
   name: string;
   email: string;
-  role: "BUYER" | "GARAGE" | "DEALERSHIP" | "CAR_OWNER" | "SUPERADMIN"; 
+  role: 'BUYER' | 'GARAGE' | 'DEALERSHIP' | 'CAR_OWNER' | 'SUPERADMIN';
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
   phoneNumber: string;
@@ -22,8 +22,8 @@ export type TUser = {
   };
 };
 
-export type TProduct = { 
-  _id: string;  
+export type TProduct = {
+  _id: string;
   title: string;
   description: string;
   photos: { thumbnail: string; cover: string };
@@ -43,9 +43,16 @@ export type DocType = {
   url: string;
 };
 
+// For documents API: support search, sort, page, limit, category
 export type TQueryParam = {
-  name: string;
-  value: boolean | React.Key;
+  search?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+  category?: string;
+  // fallback for legacy usage
+  name?: string;
+  value?: boolean | React.Key;
 };
 export type TError = {
   data: {
@@ -71,5 +78,4 @@ export type TResponse<T> = {
   message: string;
 };
 
-
-export type TResponseRedux<T> = TResponse<T> & BaseQueryApi
+export type TResponseRedux<T> = TResponse<T> & BaseQueryApi;
