@@ -3,24 +3,40 @@ import { Alert, ScrollView, Text, TextInput } from 'react-native';
 import InputLabel from '../components/InputLabel';
 import PrimaryButton from '../components/PrimaryButton';
 import { styles } from '../styles';
+import { useCreateSupportTicketMutation } from '@/redux/api/settings';
 
 export default function HelpSupportScreen() {
   const [helpName, setHelpName] = useState('');
   const [helpEmail, setHelpEmail] = useState('');
   const [helpSubject, setHelpSubject] = useState('');
   const [helpMessage, setHelpMessage] = useState('');
+  const [createSupportTicket, { isLoading }] = useCreateSupportTicketMutation();
 
-  const submitHelp = () => {
+  const submitHelp = async () => {
     if (!helpName || !helpEmail || !helpSubject || !helpMessage) {
       Alert.alert('Missing details', 'Please complete all fields before submitting.');
       return;
     }
 
-    Alert.alert('Submitted', 'Support request submitted. Our team will contact you soon.');
-    setHelpName('');
-    setHelpEmail('');
-    setHelpSubject('');
-    setHelpMessage('');
+    try {
+      const payload = {
+        name: helpName,
+        email: helpEmail,
+        subject: helpSubject,
+        message: helpMessage,
+      };
+      const response = await createSupportTicket(payload).unwrap();
+      Alert.alert(
+        'Submitted',
+        response?.message || 'Support request submitted. Our team will contact you soon.'
+      );
+      setHelpName('');
+      setHelpEmail('');
+      setHelpSubject('');
+      setHelpMessage('');
+    } catch (error: any) {
+      Alert.alert('Error', error?.data?.message || 'Failed to submit support request.');
+    }
   };
 
   return (
@@ -67,7 +83,7 @@ export default function HelpSupportScreen() {
         style={[styles.input, styles.messageInput]}
       />
 
-      <PrimaryButton title="Submit" onPress={submitHelp} />
+      <PrimaryButton title={`${isLoading ? 'Submitting...' : 'Submit'}`} onPress={submitHelp} />
     </ScrollView>
   );
 }

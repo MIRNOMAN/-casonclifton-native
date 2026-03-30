@@ -9,6 +9,8 @@ import { styles } from '../styles';
 
 type MenuScreenProps = {
   fullName: string;
+  profilePhotoUrl?: string;
+  location: string;
   onNavigate: (screen: ScreenKey) => void;
   onDeleteAccount: () => void;
   onLogout: () => void;
@@ -16,6 +18,8 @@ type MenuScreenProps = {
 
 export default function MenuScreen({
   fullName,
+  profilePhotoUrl,
+  location,
   onNavigate,
   onDeleteAccount,
   onLogout,
@@ -34,12 +38,12 @@ export default function MenuScreen({
         />
         <View style={styles.avatarOuter}>
           <Image
-            source={require('../../../../assets/images/avatar/avatar.jpg')}
+            source={ profilePhotoUrl ? { uri: profilePhotoUrl } : require('../../../../assets/images/avatar/avatar.jpg')}
             style={styles.avatarImage}
           />
         </View>
         <Text style={styles.profileName}>{fullName}</Text>
-        <Text style={styles.profileLocation}>Dubai, UAE</Text>
+        <Text style={styles.profileLocation}>{location}</Text>
       </View>
 
       <Text style={styles.sectionTitle}>Settings</Text>

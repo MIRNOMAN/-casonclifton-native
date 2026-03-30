@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import { ChevronDown } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MenuRow from '../components/MenuRow';
+
 import { styles } from '../styles';
 
 type FaqsScreenProps = {
@@ -45,16 +45,7 @@ export default function FaqsScreen({ onNavigate }: FaqsScreenProps) {
         );
       })}
 
-      <View style={styles.menuGroup}>
-        <MenuRow
-          item={{ key: 'privacy-policy', label: 'Privacy Policy' }}
-          onPress={() => onNavigate('privacy-policy')}
-        />
-        <MenuRow
-          item={{ key: 'terms', label: 'Terms and conditions' }}
-          onPress={() => onNavigate('terms')}
-        />
-      </View>
+
     </ScrollView>
   );
 }

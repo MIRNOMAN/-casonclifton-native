@@ -18,6 +18,7 @@ import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { toast } from 'sonner-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileFlow() {
@@ -135,29 +136,31 @@ export default function ProfileFlow() {
     router.replace('/(tabs)');
   };
 
-  const handleProfileSave = async (next: ProfileFormValues) => {
-    try {
-      await updateMeUser({
-        data: {
-          fullName: next.fullName,
-          email: next.accountEmail,
-          phoneNumber: next.phoneNumber,
-          dateOfBirth: next.dateOfBirth,
-          gender: next.sex,
-          location: next.location,
-        },
-      }).unwrap();
-
-      setProfile(next);
-      Alert.alert('Saved', 'Account settings updated successfully.');
-    } catch (error: any) {
-      const message =
-        error?.data?.message ||
-        error?.error ||
-        'Failed to update account settings. Please try again.';
-      Alert.alert('Update failed', message);
-    }
-  };
+  const handleProfileSave = async (next: ProfileFormValues, profilePhoto?: { uri: string; name: string; type: string } | null) => {
+  try {
+    const response = await updateMeUser({
+      data: {
+        fullName: next.fullName,
+        email: next.accountEmail,
+        phoneNumber: next.phoneNumber,
+        dateOfBirth: next.dateOfBirth,
+        gender: next.sex,
+        location: next.location,
+      },
+      profilePhoto: profilePhoto
+        ? new File([await (await fetch(profilePhoto.uri)).blob()], profilePhoto.name, { type: profilePhoto.type })
+        : undefined,
+    }).unwrap();
+    setProfile(next);
+    toast.success(response?.message || 'Account settings updated successfully!');
+  } catch (error: any) {
+    const message =
+      error?.data?.message ||
+      error?.error ||
+      'Failed to update account settings. Please try again.';
+    toast.error(message);
+  }
+};
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -184,6 +187,8 @@ export default function ProfileFlow() {
           {screen === 'menu' ? (
             <MenuScreen
               fullName={profile.fullName}
+              location={profile.location || ''}
+              profilePhotoUrl={profile.profilePhotoUrl || undefined}
               onNavigate={changeScreen}
               onDeleteAccount={() => setDeleteModalVisible(true)}
               onLogout={handleLogout}
@@ -195,8 +200,28 @@ export default function ProfileFlow() {
           {screen === 'faqs' ? <FaqsScreen onNavigate={changeScreen} /> : null}
           {screen === 'account-settings' ? (
             <AccountSettingsScreen
-              profile={profile}
-              onSave={handleProfileSave}
+              initialData={{
+                fullName: profile.fullName,
+                phoneNumber: profile.phoneNumber,
+                dateOfBirth: profile.dateOfBirth,
+                gender: profile.sex as 'Male' | 'Female',
+                profilePhotoUrl: profile.profilePhotoUrl || undefined,
+                location: profile.location || '',
+              }}
+              onSave={async (data, profilePhoto) => {
+                // Map AccountSettingsData back to ProfileFormValues
+                const nextProfile: ProfileFormValues = {
+                  ...profile,
+                  fullName: data.fullName,
+                  phoneNumber: data.phoneNumber,
+                  dateOfBirth: data.dateOfBirth,
+                  sex: data.gender,
+                  profilePhotoUrl: data.profilePhotoUrl || null,
+                  location: data.location || '',
+                };
+                // Pass the actual profilePhoto object to handleProfileSave
+                await handleProfileSave(nextProfile, profilePhoto as any);
+              }}
               isSaving={isSavingProfile}
             />
           ) : null}
