@@ -14,11 +14,24 @@ const settingsApi = baseApi.injectEndpoints({
           body: data,
         };
       },
-      invalidatesTags: ['Support'],
+      invalidatesTags: ['Settings'],
     }),
+    deleteAccount: build.mutation({
+      query: () => {
+        return {
+          url: `/settings/delete-account`,
+          method: 'DELETE',
+          
+        };
+      },
+      invalidatesTags: ['Settings'],
+    }),
+
   }),
 });
 
+
 export const {
-  useCreateSupportTicketMutation
+  useCreateSupportTicketMutation,
+  useDeleteAccountMutation
 } = settingsApi;

@@ -2,7 +2,8 @@ import { BlurView } from 'expo-blur';
 import { Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { styles } from '../styles';
+import { styles as profileStyles } from '../styles';
+import { useDeleteAccountMutation } from '@/redux/api/settings';
 
 type DeleteAccountModalProps = {
   visible: boolean;
@@ -15,10 +16,20 @@ export default function DeleteAccountModal({
   onCancel,
   onConfirm,
 }: DeleteAccountModalProps) {
+  const [deleteAccount, { isLoading, isSuccess, isError, error }] = useDeleteAccountMutation();
+
+  const handleDelete = async () => {
+    try {
+      await deleteAccount({}).unwrap();
+      // Show success modal or navigate away
+    } catch (err) {
+      // Show error modal or message
+    }
+  };
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
+      <View style={profileStyles.modalBackdrop}>
+        <View style={profileStyles.modalCard}>
           <BlurView
             intensity={52}
             tint="dark"
@@ -26,15 +37,18 @@ export default function DeleteAccountModal({
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-          <View style={styles.modalIconWrap}>
+          <View style={profileStyles.modalIconWrap}>
             <Trash2 size={16} color="#FFFFFF" />
           </View>
-          <Text style={styles.modalTitle}>Are You Sure?</Text>
-          <Text style={styles.modalSubtitle}>Do you want to delete your account?</Text>
-          <View style={styles.modalActions}>
+          <Text style={profileStyles.modalTitle}>Are You Sure?</Text>
+          <Text style={profileStyles.modalSubtitle}>Do you want to delete your account?</Text>
+          <View style={profileStyles.modalActions}>
             <Pressable
               onPress={onCancel}
-              style={({ pressed }) => [styles.modalCancel, pressed && styles.buttonPressed]}>
+              style={({ pressed }) => [
+                profileStyles.modalCancel,
+                pressed && profileStyles.buttonPressed,
+              ]}>
               <BlurView
                 intensity={40}
                 tint="dark"
@@ -42,12 +56,15 @@ export default function DeleteAccountModal({
                 style={StyleSheet.absoluteFill}
                 pointerEvents="none"
               />
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              <Text style={profileStyles.modalCancelText}>Cancel</Text>
             </Pressable>
             <Pressable
-              onPress={onConfirm}
-              style={({ pressed }) => [styles.modalDelete, pressed && styles.buttonPressed]}>
-              <Text style={styles.modalDeleteText}>Delete</Text>
+              onPress={handleDelete}
+              style={({ pressed }) => [
+                profileStyles.modalDelete,
+                pressed && profileStyles.buttonPressed,
+              ]}>
+              <Text style={profileStyles.modalDeleteText}>Delete</Text>
             </Pressable>
           </View>
         </View>

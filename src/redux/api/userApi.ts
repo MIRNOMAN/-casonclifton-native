@@ -269,7 +269,7 @@ const authApi = baseApi.injectEndpoints({
       query: (data) => {
         return {
           url: `/auth/change-password`,
-          method: 'PATCH',
+          method: 'POST',
           body: data,
         };
       },
@@ -285,6 +285,7 @@ const authApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Auth'],
     }),
+    
   }),
 });
 
