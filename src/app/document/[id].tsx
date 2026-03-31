@@ -1,13 +1,19 @@
-import { getDocumentById } from '@/features/documents/documents-data';
+import DocumentPreview from '@/components/common/DocumentViewer';
+import { useGetSingleDocumentQuery } from '@/redux/api/documentsApi';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DocumentPreviewScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const document = id ? getDocumentById(id) : undefined;
+
+  const { data: documentRaw } = useGetSingleDocumentQuery(id!, {
+    skip: !id,
+  });
+
+  const document = documentRaw?.data;
 
   if (!document) {
     return (
@@ -28,7 +34,9 @@ export default function DocumentPreviewScreen() {
         <Text style={styles.headerTitle}>{document.title}</Text>
       </View>
 
-      <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
+      <DocumentPreview fileUrl={document.fileUrl} />
+
+      {/* <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
         <Text style={styles.title}>{document.title}</Text>
         <Text style={styles.meta}>Version: {document.version}</Text>
         <Text style={styles.meta}>Effective Date: {document.effectiveDate}</Text>
@@ -48,7 +56,7 @@ export default function DocumentPreviewScreen() {
             <View style={styles.separator} />
           </View>
         ))}
-      </ScrollView>
+      </ScrollView> */}
     </SafeAreaView>
   );
 }

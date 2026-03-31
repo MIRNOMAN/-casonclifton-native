@@ -112,5 +112,4 @@ export const INITIAL_DOCUMENTS: DocumentItem[] = [
   },
 ];
 
-export const getDocumentById = (id: string) =>
-  INITIAL_DOCUMENTS.find((document) => document.id === id);
+export const getDocumentById = (id: string) => INITIAL_DOCUMENTS[0];
