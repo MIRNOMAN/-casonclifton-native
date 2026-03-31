@@ -1,43 +1,142 @@
 import { Pencil } from 'lucide-react-native';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useGetDocumentNdaQuery } from '@/redux/api/documentsApi';
 
+// ─────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────
 type AdminNdaOverviewCardProps = {
   onOpen: () => void;
   onEdit: () => void;
 };
 
-export const NDA_TEXT = `This Non-Disclosure Agreement ("Agreement") is entered into by and between Creston Industries ("Company") and the undersigned individual ("Recipient").\n\nThe Recipient agrees to hold in confidence and not disclose any confidential information, documents, procedures, or materials accessed through the Creston Document Management System.\n\nViolation of this agreement may result in legal action and immediate termination of access privileges.\n\nThis agreement is effective upon acceptance and remains in force for 2 years following termination of access.`;
+// ─────────────────────────────────────────────────────────────
+// Shimmer hook
+// ─────────────────────────────────────────────────────────────
+function useShimmer() {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [anim]);
+  return anim.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.7] });
+}
 
+// ─────────────────────────────────────────────────────────────
+// Skeleton primitives
+// ─────────────────────────────────────────────────────────────
+function SkeletonBox({
+  width,
+  height,
+  style,
+  opacity,
+}: {
+  width: number | string;
+  height: number;
+  style?: object;
+  opacity: Animated.AnimatedInterpolation<number>;
+}) {
+  return (
+    <Animated.View
+      style={[{ width, height, borderRadius: 8, backgroundColor: '#1A2538', opacity }, style]}
+    />
+  );
+}
+
+function SkeletonCard() {
+  const opacity = useShimmer();
+  return (
+    <View style={styles.card}>
+      {/* Top row */}
+      <View style={skeletonStyles.topRow}>
+        <View style={{ gap: 8 }}>
+          <SkeletonBox width={180} height={26} opacity={opacity} />
+          <SkeletonBox width={140} height={14} opacity={opacity} />
+        </View>
+        <SkeletonBox width={72} height={36} opacity={opacity} style={{ borderRadius: 10 }} />
+      </View>
+      {/* Preview lines */}
+      {[100, 88, 95, 75, 90, 80, 70, 85, 60, 78].map((w, i) => (
+        <SkeletonBox
+          key={i}
+          width={`${w}%`}
+          height={13}
+          opacity={opacity}
+          style={{ marginBottom: 12 }}
+        />
+      ))}
+    </View>
+  );
+}
+
+const skeletonStyles = StyleSheet.create({
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 18,
+  },
+});
+
+// ─────────────────────────────────────────────────────────────
+// Helper — format date string
+// ─────────────────────────────────────────────────────────────
+function formatDate(iso?: string): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────────
 export function AdminNdaOverviewCard({ onOpen, onEdit }: AdminNdaOverviewCardProps) {
+  const { data, isLoading } = useGetDocumentNdaQuery();
+
+  if (isLoading) return <SkeletonCard />;
+
+  const ndaTitle   = data?.data?.title   ?? 'NDA Agreement';
+  const ndaContent = data?.data?.content ?? '';
+  const updatedAt  = formatDate(data?.data?.updatedAt);
+
   return (
     <Pressable
       onPress={onOpen}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
       <View style={styles.topRow}>
-        <View>
-          <Text style={styles.title}>NDA Agreement</Text>
-          <Text style={styles.updated}>Last updated: March 10, 2024</Text>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={styles.title}>{ndaTitle}</Text>
+          <Text style={styles.updated}>Last updated: {updatedAt}</Text>
         </View>
-
         <Pressable
           style={styles.editButton}
-          onPress={(event) => {
-            event.stopPropagation();
+          onPress={(e) => {
+            e.stopPropagation();
             onEdit();
-          }}>
+          }}
+        >
           <Pencil size={14} color="#8FA0BE" />
           <Text style={styles.editText}>Edit</Text>
         </Pressable>
       </View>
 
       <Text numberOfLines={10} style={styles.previewText}>
-        {NDA_TEXT}
+        {ndaContent}
       </Text>
     </Pressable>
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#111E34',
@@ -55,7 +154,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '700',
     marginBottom: 4,
   },
