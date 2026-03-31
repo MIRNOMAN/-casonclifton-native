@@ -27,8 +27,16 @@ const documentsApi = baseApi.injectEndpoints({
         url: `/documents/${id}/preview`,
         method: 'GET',
       }),
+      providesTags: ['Documents'],
+    }),
+    getSingleDocument: builder.query<TResponse<any>, string>({
+      query: (id) => ({
+        url: `/documents/${id}`,
+        method: 'GET',
+      }),
+      providesTags: ['Documents'],
     }),
   }),
 });
 
-export const { useGetAllDocumentsQuery, useGetDocumentPreviewQuery } = documentsApi;
+export const { useGetAllDocumentsQuery, useGetDocumentPreviewQuery, useGetSingleDocumentQuery } = documentsApi;

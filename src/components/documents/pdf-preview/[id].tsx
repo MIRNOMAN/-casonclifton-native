@@ -1,12 +1,14 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View, Text, Dimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { useGetDocumentPreviewQuery } from '@/redux/api/documentsApi';
+import { useGetSingleDocumentQuery } from '@/redux/api/documentsApi';
 import Pdf from 'react-native-pdf';
+import { useAppSelector } from '@/redux/store';
 
 export default function DocumentPreviewScreen() {
+  const token = useAppSelector((state) => state.auth.token);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading } = useGetDocumentPreviewQuery(id || '');
+  const { data, isLoading } = useGetSingleDocumentQuery(id || '');
   const fileUrl = data?.data?.fileUrl;
   const [error, setError] = React.useState(false);
   const [pdfLoading, setPdfLoading] = React.useState(true);
@@ -38,7 +40,11 @@ export default function DocumentPreviewScreen() {
 
   return (
     <Pdf
-      source={{ uri: fileUrl, cache: true }}
+      source={{
+        uri: fileUrl,
+        cache: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      }}
       style={styles.pdf}
       onError={() => setError(true)}
       onLoadComplete={() => setPdfLoading(false)}

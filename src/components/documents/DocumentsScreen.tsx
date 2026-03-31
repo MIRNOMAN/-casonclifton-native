@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryChips } from './CategoryChips';
 import { DocumentCard } from './DocumentCard';
@@ -8,7 +9,12 @@ import { DocumentSearchBar } from './DocumentSearchBar';
 import { HomeHeader } from './HomeHeader';
 import { useGetAllDocumentsQuery } from '@/redux/api/documentsApi';
 import { DocumentCategoryFilter } from '@/features/documents/documents-data';
-import { useDocuments } from '@/features/documents/documents-context';
+import {
+  useCreateFavouriteMutation,
+  useDeleteFavouriteMutation,
+  useGetAllfavouritesQuery,
+} from '@/redux/api/favourite';
+import { toast } from 'sonner-native';
 import DocumentsSkeleton from '../skeleton/DocumentsSkeleton';
 import { selectCurrentRole } from '@/redux/authSlice';
 import { useAppSelector } from '@/redux/store';
@@ -32,10 +38,39 @@ export function DocumentsScreen({
   const [limit, setLimit] = useState(10);
   const [sort, setSort] = useState('-createdAt');
 
-  // Favorite toggle from context
-  const { toggleFavorite } = useDocuments();
+  // Favorite API hooks
+  const { data: favData, refetch: refetchFavs } = useGetAllfavouritesQuery({});
+  const [createFavourite] = useCreateFavouriteMutation();
+  const [deleteFavourite] = useDeleteFavouriteMutation();
 
-  // API call
+  // Helper to check if a document is favorite
+  const isFavorite = (docId: string) =>
+    !!(
+      favData &&
+      favData.data &&
+      Array.isArray(favData.data) &&
+      favData.data.some((fav: any) => fav.documentId === docId)
+    );
+
+  // Toggle favorite handler
+  const handleToggleFavorite = async (docId: string) => {
+    try {
+      if (isFavorite(docId)) {
+        // Find the favorite record id
+        // API expects DELETE /favorite/:document_id
+        await deleteFavourite(docId).unwrap();
+        toast.success('Removed from favorites');
+      } else {
+        await createFavourite({ documentId: docId }).unwrap();
+        toast.success('Added to favorites');
+      }
+      refetchFavs();
+    } catch (err: any) {
+      toast.error(err?.data?.message || 'Failed to update favorite');
+    }
+  };
+
+  // API call for all documents
   const { data, isLoading, isFetching } = useGetAllDocumentsQuery({
     page,
     limit,
@@ -45,6 +80,12 @@ export function DocumentsScreen({
   });
   const documents = data?.data || [];
   const meta = data?.meta || { page: 1, limit: 10, total: 0, totalPage: 1 };
+
+  // For favorite screen, get only favorites
+  const favoriteDocs =
+    favData && favData.data && Array.isArray(favData.data)
+      ? favData.data.map((fav: any) => fav.document)
+      : [];
 
   const resolvedUserRole = useMemo(() => {
     if (userRole === 'admin') {
@@ -56,18 +97,9 @@ export function DocumentsScreen({
 
   // Patch document to match DocumentCard expected props
   const renderDocument = ({ item }: { item: any }) => {
-    // Map API fields to DocumentItem fields for DocumentCard
     const mappedDoc = {
-      id: item.id,
-      title: item.title,
-      category: item.category,
-      updatedAt: new Date(item.updatedAt || item.createdAt).toLocaleDateString(),
-      pages: item.pages,
-      isFavorite: item.isFavorite || false,
-      version: item.version || '',
-      effectiveDate: item.effectiveDate || '',
-      preparedBy: item.createdBy || '',
-      sections: [],
+      ...item,
+      isFavorite: isFavorite(item.id),
     };
     return (
       <DocumentCard
@@ -78,13 +110,15 @@ export function DocumentsScreen({
             params: { id: item.id },
           })
         }
-        onToggleFavorite={() => toggleFavorite(item.id)}
+        onToggleFavorite={() => handleToggleFavorite(item.id)}
       />
     );
   };
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <SafeAreaView
+      style={[styles.screen, { paddingTop: insets.top }]}
+      edges={['top', 'left', 'right']}>
       <HomeHeader userRole={resolvedUserRole} variant={headerVariant} />
       {/* Search, Category, Sort Controls */}
       <View style={{ paddingHorizontal: 18, paddingBottom: 8 }}>
@@ -116,6 +150,20 @@ export function DocumentsScreen({
       </View>
       {isLoading || isFetching ? (
         <DocumentsSkeleton />
+      ) : mode === 'favorite' ? (
+        <FlatList
+          data={favoriteDocs}
+          keyExtractor={(item) => item.id}
+          renderItem={renderDocument}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyTitle}>No favorites yet</Text>
+              <Text style={styles.emptyBody}>Tap the star on any card to add it to Favorite.</Text>
+            </View>
+          }
+        />
       ) : (
         <FlatList
           data={documents}
@@ -125,14 +173,8 @@ export function DocumentsScreen({
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <Text style={styles.emptyTitle}>
-                {mode === 'favorite' ? 'No favorites yet' : 'No documents found'}
-              </Text>
-              <Text style={styles.emptyBody}>
-                {mode === 'favorite'
-                  ? 'Tap the star on any card to add it to Favorite.'
-                  : 'Try a different category or search term.'}
-              </Text>
+              <Text style={styles.emptyTitle}>No documents found</Text>
+              <Text style={styles.emptyBody}>Try a different category or search term.</Text>
             </View>
           }
         />
@@ -155,7 +197,7 @@ export function DocumentsScreen({
           <Text style={styles.pageBtnText}>{'>'}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

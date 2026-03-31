@@ -5,6 +5,8 @@ export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
+    paddingHorizontal: 16,
+    
   },
   root: {
     flex: 1,
