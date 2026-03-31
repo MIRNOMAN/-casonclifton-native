@@ -1,30 +1,44 @@
 import DotSpinner from '@/components/common/DotSpinner';
 import { COLORS } from '@/constants/colors';
-import { router } from 'expo-router';
+import { useAppSelector } from '@/redux/store';
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SplashScreen() {
+  const router = useRouter();
+
+  // 1. Get the token from Redux state reactively
+  const authToken = useAppSelector((state) => state.auth.token);
+
   useEffect(() => {
+    // 2. Set a single timeout to handle navigation logic
     const timeout = setTimeout(() => {
-      router.replace('/(auth)/login');
-    }, 5000);
+      if (authToken) {
+        // Replace current route so user can't go "back" to splash
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login');
+      }
+    }, 3000); // 3 seconds is usually enough for a logo reveal
 
     return () => clearTimeout(timeout);
-  }, []);
+  }, [authToken, router]);
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="light" />
 
+      {/* Background Image */}
       <Image
         source={require('../../assets/images/backround/backround.png')}
         style={styles.background}
         resizeMode="cover"
       />
 
+      {/* Content Overlay */}
       <View style={styles.overlay}>
         <View style={styles.logoBlock}>
           <Image
@@ -34,6 +48,7 @@ export default function SplashScreen() {
           />
         </View>
 
+        {/* Loading Indicator */}
         <View style={styles.spinnerWrap}>
           <DotSpinner size={36} color="#FFFFFF" speed={120} />
         </View>
@@ -45,7 +60,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.background || '#000',
     position: 'relative',
   },
   background: {
