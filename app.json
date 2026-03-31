@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#000C22"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -22,7 +24,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.robin_mia.minimal"
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +33,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+<<<<<<< Updated upstream
       "expo-router",
       "@config-plugins/react-native-pdf",
       "@config-plugins/react-native-blob-util",
@@ -47,6 +51,9 @@
           }
         }
       ]
+=======
+      "expo-router"
+>>>>>>> Stashed changes
     ],
     "experiments": {
       "typedRoutes": true,
