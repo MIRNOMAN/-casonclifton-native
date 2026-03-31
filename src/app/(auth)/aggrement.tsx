@@ -4,85 +4,246 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { AlertTriangle, FileText } from 'lucide-react-native';
 import { COLORS } from '../../constants/colors';
+import { useGetDocumentNdaQuery } from '@/redux/api/documentsApi';
 
-const SECTIONS = [
-  {
-    title: '1. Confidential Information',
-    body: 'All documents, procedures, instructional materials, technical specifications, and any other information accessed through the Creston Document Management System (the Platform) are considered Confidential Information.',
-  },
-  {
-    title: '2. Obligations',
-    body: 'The Receiving Party agrees to: (a) hold and maintain the Confidential Information in strict confidence; (b) not to disclose, publish, or otherwise reveal any of the Confidential Information to any third party; (c) not to copy, reproduce, or download any documents from the Platform unless explicitly authorized.',
-  },
-  {
-    title: '3. Duration',
-    body: 'This Agreement and the obligations herein shall remain in effect for a period of five (5) years from the date of acceptance, or until the Confidential Information no longer qualifies as confidential, whichever is later.',
-  },
-  {
-    title: '4. Remedies',
-    body: 'The Receiving Party acknowledges that any breach of this Agreement may cause irreparable harm and that monetary damages may be inadequate. The Disclosing Party shall be entitled to seek equitable relief, including injunction and specific performance.',
-  },
-  {
-    title: '5. Return of Materials',
-    body: 'Upon termination of employment or this Agreement, the Receiving Party shall promptly return or destroy all Confidential Information and any copies thereof.',
-  },
-];
+// ─────────────────────────────────────────────────────────────
+// Shimmer hook
+// ─────────────────────────────────────────────────────────────
+function useShimmer() {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [anim]);
+  return anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.65] });
+}
 
+// ─────────────────────────────────────────────────────────────
+// Skeleton primitives
+// ─────────────────────────────────────────────────────────────
+function SkeletonBox({
+  width,
+  height,
+  style,
+  opacity,
+}: {
+  width: number | string;
+  height: number;
+  style?: object;
+  opacity: Animated.AnimatedInterpolation<number>;
+}) {
+  return (
+    <Animated.View
+      style={[{ width, height, borderRadius: 6, backgroundColor: '#1A2538', opacity }, style]}
+    />
+  );
+}
+
+function SkeletonScreen() {
+  const opacity = useShimmer();
+  return (
+    <View style={skeletonStyles.container}>
+      {/* Logo placeholder */}
+      <SkeletonBox
+        width={118}
+        height={48}
+        opacity={opacity}
+        style={{ alignSelf: 'center', marginBottom: 20, borderRadius: 8 }}
+      />
+
+      {/* Title + subtitle */}
+      <SkeletonBox width="70%" height={22} opacity={opacity} style={{ alignSelf: 'center', marginBottom: 10 }} />
+      <SkeletonBox width="55%" height={14} opacity={opacity} style={{ alignSelf: 'center', marginBottom: 6 }} />
+      <SkeletonBox width="45%" height={14} opacity={opacity} style={{ alignSelf: 'center', marginBottom: 18 }} />
+
+      {/* Warning card */}
+      <View style={skeletonStyles.warningCard}>
+        <SkeletonBox width={20} height={20} opacity={opacity} style={{ borderRadius: 10, flexShrink: 0 }} />
+        <View style={{ flex: 1, gap: 6 }}>
+          <SkeletonBox width="100%" height={12} opacity={opacity} />
+          <SkeletonBox width="75%" height={12} opacity={opacity} />
+        </View>
+      </View>
+
+      {/* Section blocks */}
+      {[1, 2, 3, 4].map((i) => (
+        <View key={i} style={skeletonStyles.section}>
+          <SkeletonBox width="45%" height={14} opacity={opacity} style={{ marginBottom: 10 }} />
+          <SkeletonBox width="100%" height={11} opacity={opacity} style={{ marginBottom: 7 }} />
+          <SkeletonBox width="95%" height={11} opacity={opacity} style={{ marginBottom: 7 }} />
+          <SkeletonBox width="80%" height={11} opacity={opacity} />
+        </View>
+      ))}
+
+      {/* Checkbox row */}
+      <View style={skeletonStyles.checkboxRow}>
+        <SkeletonBox width={16} height={16} opacity={opacity} style={{ borderRadius: 8, flexShrink: 0, marginTop: 2 }} />
+        <View style={{ flex: 1, gap: 6 }}>
+          <SkeletonBox width="100%" height={10} opacity={opacity} />
+          <SkeletonBox width="85%" height={10} opacity={opacity} />
+        </View>
+      </View>
+
+      {/* Button */}
+      <SkeletonBox width="100%" height={52} opacity={opacity} style={{ borderRadius: 12, marginTop: 8 }} />
+    </View>
+  );
+}
+
+const skeletonStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 18,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: 'rgba(89, 35, 38, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(254, 160, 143, 0.22)',
+    marginBottom: 16,
+  },
+  section: {
+    marginBottom: 16,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 10,
+    marginBottom: 14,
+  },
+});
+
+// ─────────────────────────────────────────────────────────────
+// Helper — split NDA content into paragraphs/sections
+// ─────────────────────────────────────────────────────────────
+type Section = { title: string; body: string };
+
+function parseNdaContent(content: string): Section[] {
+  if (!content) return [];
+
+  // Split on double newlines to get paragraphs
+  const paragraphs = content
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length === 0) return [];
+
+  // If there's only one block, show it as a single section
+  if (paragraphs.length === 1) {
+    return [{ title: 'Agreement', body: paragraphs[0] }];
+  }
+
+  // Multiple paragraphs: number them
+  return paragraphs.map((para, idx) => ({
+    title: `${idx + 1}. ${para.split('.')[0].slice(0, 60)}`,
+    body: para,
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main screen
+// ─────────────────────────────────────────────────────────────
 export default function AggrementScreen() {
   const [accepted, setAccepted] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
 
+  // ── Fetch NDA from API ────────────────────────────────────────────────────
+  const { data, isLoading } = useGetDocumentNdaQuery();
+
+  const ndaTitle   = data?.data?.title   ?? 'Non-Disclosure Agreement';
+  const ndaContent = data?.data?.content ?? '';
+  const sections   = parseNdaContent(ndaContent);
+
+  // ── Entrance animation (runs after load) ─────────────────────────────────
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+    if (!isLoading) {
+      Animated.parallel([
+        Animated.timing(fadeAnim,  { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [isLoading, fadeAnim, slideAnim]);
 
   const handleContinue = () => {
     if (!accepted) return;
     router.replace('/(auth)/login');
   };
 
+  // ── Skeleton ──────────────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <SkeletonScreen />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Loaded ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe}>
       <Animated.View
-        style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        style={[
+          styles.container,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
         <Image
           source={require('../../../assets/images/logo/logo.png')}
           style={styles.logoImage}
           resizeMode="contain"
         />
 
-        <Text className="mb-2 text-center text-[26px] leading-9 font-bold text-white">
-          Non-Disclosure Agreement
-        </Text>
-        <Text className="mb-6 text-center text-base leading-6 text-[#9CA3AF]">
+        <Text style={styles.heading}>{ndaTitle}</Text>
+        <Text style={styles.subheading}>
           Please review and accept before{`\n`}accessing documents
         </Text>
 
         <View style={styles.warningCard}>
           <AlertTriangle size={20} color="#FE6F61" />
           <Text style={styles.warningText}>
-            This agreement is legally binding All documents accessed through this platform are
-            strictly confidential
+            This agreement is legally binding. All documents accessed through this platform are
+            strictly confidential.
           </Text>
         </View>
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
-          {SECTIONS.map((section) => (
-            <View key={section.title} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <Text style={styles.sectionBody}>{section.body}</Text>
+          showsVerticalScrollIndicator={false}
+        >
+          {sections.length > 0 ? (
+            sections.map((section, idx) => (
+              <View key={idx} style={styles.section}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+                <Text style={styles.sectionBody}>{section.body}</Text>
+              </View>
+            ))
+          ) : (
+            // Fallback: render raw content if parsing yields nothing
+            <View style={styles.section}>
+              <Text style={styles.sectionBody}>{ndaContent || 'No content available.'}</Text>
             </View>
-          ))}
+          )}
         </ScrollView>
 
-        <Pressable style={styles.checkboxRow} onPress={() => setAccepted((value) => !value)}>
+        <Pressable
+          style={styles.checkboxRow}
+          onPress={() => setAccepted((v) => !v)}
+        >
           <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>
             {accepted ? <View style={styles.checkboxDot} /> : null}
           </View>
@@ -99,7 +260,8 @@ export default function AggrementScreen() {
             accepted ? styles.buttonEnabled : styles.buttonDisabled,
             pressed && accepted && styles.buttonPressed,
           ]}
-          onPress={handleContinue}>
+          onPress={handleContinue}
+        >
           <FileText size={18} color={accepted ? '#0D1117' : '#7C8597'} />
           <Text style={[styles.buttonText, accepted && styles.buttonTextEnabled]}>
             Accept & Continue
@@ -110,6 +272,9 @@ export default function AggrementScreen() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -128,6 +293,21 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 18,
   },
+  heading: {
+    marginBottom: 8,
+    textAlign: 'center',
+    fontSize: 26,
+    lineHeight: 36,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  subheading: {
+    marginBottom: 16,
+    textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 24,
+    color: '#9CA3AF',
+  },
   warningCard: {
     flexDirection: 'row',
     gap: 8,
@@ -143,7 +323,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FE6F61',
     fontSize: 14,
-    lineHeight: 15,
+    lineHeight: 20,
   },
   scroll: {
     flex: 1,
