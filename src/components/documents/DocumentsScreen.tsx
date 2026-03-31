@@ -117,8 +117,7 @@ export function DocumentsScreen({
 
   return (
     <SafeAreaView
-      style={[styles.screen, { paddingTop: insets.top }]}
-      edges={['top', 'left', 'right']}>
+      style={styles.safeArea}>
       <HomeHeader userRole={resolvedUserRole} variant={headerVariant} />
       {/* Search, Category, Sort Controls */}
       <View style={{ paddingHorizontal: 18, paddingBottom: 8 }}>
@@ -202,6 +201,11 @@ export function DocumentsScreen({
 }
 
 const styles = StyleSheet.create({
+   safeArea: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+
+  },
   screen: {
     flex: 1,
     backgroundColor: '#000E26',

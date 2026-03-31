@@ -36,7 +36,55 @@ const documentsApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Documents'],
     }),
+    createDocument: builder.mutation<TResponse<any>, FormData>({
+      query: (formData) => ({
+        url: '/documents',
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: ['Documents'],
+    }),
+    updateDocument: builder.mutation<TResponse<any>, { id: string; formData: FormData }>({
+      query: ({ id, formData }) => ({
+        url: `/documents/${id}`,
+        method: 'PATCH',
+        body: formData,
+      }),
+      invalidatesTags: ['Documents'],
+    }),
+    deleteDocument: builder.mutation<TResponse<any>, string>({
+      query: (id) => ({
+        url: `/documents/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Documents'],
+    }),
+    getDocumentNda: builder.query<TResponse<any>, void>({
+      query: () => ({
+        url: '/documents/nda',
+        method: 'GET',
+      }),
+      providesTags: ['Documents'],
+    }),
+    updateDocumentNda: builder.mutation({
+      query: (data) => ({
+        url: '/documents/nda',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Documents'],
+    }),
   }),
 });
 
-export const { useGetAllDocumentsQuery, useGetDocumentPreviewQuery, useGetSingleDocumentQuery } = documentsApi;
+export const {
+  useGetAllDocumentsQuery,
+  useGetDocumentPreviewQuery,
+  useGetSingleDocumentQuery,
+  useUpdateDocumentMutation,
+  useCreateDocumentMutation,
+  useDeleteDocumentMutation,
+  useGetDocumentNdaQuery,
+  useUpdateDocumentNdaMutation,
+  
+} = documentsApi;

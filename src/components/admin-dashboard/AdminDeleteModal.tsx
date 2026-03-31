@@ -1,14 +1,21 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 type AdminDeleteModalProps = {
   visible: boolean;
   title: string;
   onCancel: () => void;
   onConfirm: () => void;
+  isDeleting?: boolean;
 };
 
-export function AdminDeleteModal({ visible, title, onCancel, onConfirm }: AdminDeleteModalProps) {
+export function AdminDeleteModal({
+  visible,
+  title,
+  onCancel,
+  onConfirm,
+  isDeleting = false,
+}: AdminDeleteModalProps) {
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel}>
       <View style={styles.overlay}>
@@ -17,11 +24,22 @@ export function AdminDeleteModal({ visible, title, onCancel, onConfirm }: AdminD
           <Text style={styles.message}>"{title}" will be permanently removed.</Text>
 
           <View style={styles.actions}>
-            <Pressable style={styles.cancelButton} onPress={onCancel}>
+            <Pressable
+              style={[styles.cancelButton, isDeleting && styles.disabled]}
+              onPress={onCancel}
+              disabled={isDeleting}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
-            <Pressable style={styles.deleteButton} onPress={onConfirm}>
-              <Text style={styles.deleteText}>Delete</Text>
+
+            <Pressable
+              style={[styles.deleteButton, isDeleting && styles.disabled]}
+              onPress={onConfirm}
+              disabled={isDeleting}>
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.deleteText}>Delete</Text>
+              )}
             </Pressable>
           </View>
         </View>
@@ -89,5 +107,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

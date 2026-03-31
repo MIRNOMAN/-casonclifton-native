@@ -13,6 +13,7 @@ type AdminDocumentFormModalProps = {
   initialDocument?: AdminDocument;
   onClose: () => void;
   onSubmit: (payload: AdminFormPayload) => void;
+  isSubmitting?: boolean;
 };
 
 const CATEGORY_OPTIONS: Array<{ label: string; value: DocumentCategory }> = [
@@ -32,6 +33,7 @@ export function AdminDocumentFormModal({
   initialDocument,
   onClose,
   onSubmit,
+  isSubmitting = false,
 }: AdminDocumentFormModalProps) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<DocumentCategory>('Safety Procedures');
@@ -67,8 +69,9 @@ export function AdminDocumentFormModal({
   const submitDisabled = useMemo(() => {
     if (!title.trim()) return true;
     if (mode === 'upload' && !fileUri) return true;
+    if (isSubmitting) return true;
     return false;
-  }, [fileUri, mode, title]);
+  }, [fileUri, mode, title, isSubmitting]);
 
   const handlePickPdf = async () => {
     try {
@@ -141,7 +144,9 @@ export function AdminDocumentFormModal({
           <Pressable
             style={[styles.actionButton, submitDisabled && styles.actionButtonDisabled]}
             onPress={handleSubmit}>
-            <Text style={styles.actionText}>{actionLabel}</Text>
+            <Text style={styles.actionText}>
+              {isSubmitting ? 'Please wait...' : actionLabel}
+            </Text>
           </Pressable>
         </View>
       </View>
