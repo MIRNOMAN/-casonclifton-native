@@ -1,6 +1,5 @@
 import DeleteAccountModal from '@/components/profile/components/DeleteAccountModal';
 import { SCREEN_TITLES } from '@/components/profile/data';
-import { BlurView } from 'expo-blur';
 import AccountSettingsScreen from '@/components/profile/screens/AccountSettingsScreen';
 import ChangePasswordScreen from '@/components/profile/screens/ChangePasswordScreen';
 import FaqsScreen from '@/components/profile/screens/FaqsScreen';
@@ -14,12 +13,13 @@ import { useGetMeUserQuery, useUpdateMeUserMutation } from '@/redux/api/userApi'
 import { selectCurrentToken } from '@/redux/authSlice';
 import { useAppSelector } from '@/redux/store';
 import { useFocusEffect } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
-import { toast } from 'sonner-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { toast } from 'sonner-native';
 
 export default function ProfileFlow() {
   const token = useAppSelector(selectCurrentToken);
@@ -136,31 +136,36 @@ export default function ProfileFlow() {
     router.replace('/(tabs)');
   };
 
-  const handleProfileSave = async (next: ProfileFormValues, profilePhoto?: { uri: string; name: string; type: string } | null) => {
-  try {
-    const response = await updateMeUser({
-      data: {
-        fullName: next.fullName,
-        email: next.accountEmail,
-        phoneNumber: next.phoneNumber,
-        dateOfBirth: next.dateOfBirth,
-        gender: next.sex,
-        location: next.location,
-      },
-      profilePhoto: profilePhoto
-        ? new File([await (await fetch(profilePhoto.uri)).blob()], profilePhoto.name, { type: profilePhoto.type })
-        : undefined,
-    }).unwrap();
-    setProfile(next);
-    toast.success(response?.message || 'Account settings updated successfully!');
-  } catch (error: any) {
-    const message =
-      error?.data?.message ||
-      error?.error ||
-      'Failed to update account settings. Please try again.';
-    toast.error(message);
-  }
-};
+  const handleProfileSave = async (
+    next: ProfileFormValues,
+    profilePhoto?: { uri: string; name: string; type: string } | null
+  ) => {
+    try {
+      const response = await updateMeUser({
+        data: {
+          fullName: next.fullName,
+          email: next.accountEmail,
+          phoneNumber: next.phoneNumber,
+          dateOfBirth: next.dateOfBirth,
+          gender: next.sex,
+          location: next.location,
+        },
+        profilePhoto: profilePhoto
+          ? new File([await (await fetch(profilePhoto.uri)).blob()], profilePhoto.name, {
+              type: profilePhoto.type,
+            })
+          : undefined,
+      }).unwrap();
+      setProfile(next);
+      toast.success(response?.message || 'Account settings updated successfully!');
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.error ||
+        'Failed to update account settings. Please try again.';
+      toast.error(message);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

@@ -1,20 +1,19 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  ActivityIndicator,
   Image,
   Modal,
   Platform,
-  ActivityIndicator,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
 import { toast } from 'sonner-native';
-import { COLORS } from '@/constants/colors';
 
 type AccountSettingsData = {
   fullName: string;
@@ -57,27 +56,38 @@ export default function AccountSettingsScreen({
   const [showImageModal, setShowImageModal] = useState(false);
 
   const handlePickImage = async () => {
-    const mediaTypes = ImagePicker.MediaTypeOptions.Images;
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      toast.error('Permission to access the media library is required.');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 1,
+      legacy: true,
     });
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const asset = result.assets[0];
-      let uri = asset.uri;
-      if (!uri.startsWith('file://')) {
-        uri = 'file://' + uri;
-      }
-      console.log('Selected image URI:', uri);
-      // Avoid assigning to read-only property
-      setProfilePhoto({
-        uri,
-        name: asset.fileName ? asset.fileName : 'photo.jpg',
-        type: asset.type ? asset.type : 'image/jpeg',
-      });
-      setForm((prev) => ({ ...prev, profilePhotoUrl: uri }));
+
+    if (result.canceled || result.assets.length === 0) {
+      toast.warning('No image selected.');
+      return;
     }
+
+    const asset = result.assets[0];
+    let uri = asset.uri;
+    if (!uri.startsWith('file://')) {
+      uri = 'file://' + uri;
+    }
+    console.log('Selected image URI:', uri);
+    // Avoid assigning to read-only property
+    setProfilePhoto({
+      uri,
+      name: asset.fileName ? asset.fileName : 'photo.jpg',
+      type: asset.type ? asset.type : 'image/jpeg',
+    });
+    setForm((prev) => ({ ...prev, profilePhotoUrl: uri }));
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {

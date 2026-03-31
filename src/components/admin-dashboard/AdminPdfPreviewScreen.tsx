@@ -1,10 +1,10 @@
+import { useGetSingleDocumentQuery } from '@/redux/api/documentsApi';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
-import { useGetSingleDocumentQuery } from '@/redux/api/documentsApi';
+import DocumentPreview from '../common/DocumentViewer';
 
 // ─────────────────────────────────────────────────────────────
 // Shimmer hook
@@ -124,20 +124,16 @@ export function AdminPdfPreviewScreen() {
   }>();
 
   // ── Fetch document by id ──────────────────────────────────────────────────
-  const {
-    data,
-    isLoading,
-    isError,
-  } = useGetSingleDocumentQuery(params.id ?? '', {
+  const { data, isLoading, isError } = useGetSingleDocumentQuery(params.id ?? '', {
     skip: !params.id,
   });
 
   // ── Derived values — API takes priority, params are fallback ──────────────
-  const title         = data?.data?.title        ?? params.title        ?? 'Document Preview';
-  const version       = data?.data?.version      ?? params.version      ?? '1.0';
+  const title = data?.data?.title ?? params.title ?? 'Document Preview';
+  const version = data?.data?.version ?? params.version ?? '1.0';
   const effectiveDate = data?.data?.createdAt?.split('T')[0] ?? params.effectiveDate ?? '—';
-  const preparedBy    = data?.data?.createdBy    ?? params.preparedBy   ?? 'admin';
-  const fileUrl       = data?.data?.fileUrl;
+  const preparedBy = data?.data?.createdBy ?? params.preparedBy ?? 'admin';
+  const fileUrl = data?.data?.fileUrl;
 
   // Google Docs PDF viewer — works for remote PDFs on both iOS & Android
   const pdfViewerUri = fileUrl
@@ -190,16 +186,7 @@ export function AdminPdfPreviewScreen() {
           </View>
 
           {/* PDF rendered via Google Docs viewer */}
-          <WebView
-            style={styles.webview}
-            source={{ uri: pdfViewerUri! }}
-            startInLoadingState
-            renderLoading={() => <PdfSkeleton />}
-            onError={() => {}}
-            javaScriptEnabled
-            domStorageEnabled
-            scalesPageToFit
-          />
+          <DocumentPreview fileUrl={fileUrl!} />
         </View>
       )}
     </SafeAreaView>
@@ -244,8 +231,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F3F6FB',
-    
-  
+
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },

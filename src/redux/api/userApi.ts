@@ -1,4 +1,3 @@
-import { TQueryParam } from '@/types';
 import { baseApi } from './baseApi';
 
 type LoginRequest = {
@@ -251,10 +250,13 @@ const authApi = baseApi.injectEndpoints({
     updateMeUser: build.mutation({
       query: (payload: { data: any; profilePhoto?: File }) => {
         const formData = new FormData();
-        formData.append('data', JSON.stringify(payload.data));
+
         if (payload.profilePhoto) {
           formData.append('profilePhoto', payload.profilePhoto as any);
         }
+
+        formData.append('data', JSON.stringify({ payload }));
+        console.log({ profile: payload.profilePhoto });
 
         return {
           url: `/settings/account-settings`,
@@ -285,7 +287,6 @@ const authApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Auth'],
     }),
-    
   }),
 });
 
