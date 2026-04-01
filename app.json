@@ -8,14 +8,19 @@
     "scheme": "minimal",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "build": {
+      "development": {
+        "ios": {
+          "simulator": true
+        }
+      }
+    },
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#000C22"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
@@ -25,7 +30,14 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.robin_mia.minimal"
+      "package": "com.robin_mia.minimal",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,10 +45,17 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-<<<<<<< Updated upstream
       "expo-router",
       "@config-plugins/react-native-pdf",
       "@config-plugins/react-native-blob-util",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -51,13 +70,16 @@
           }
         }
       ]
-=======
-      "expo-router"
->>>>>>> Stashed changes
     ],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "baa1e8c4-1ddc-45a4-96fa-effd099132d4"
+      }
     }
   }
 }
