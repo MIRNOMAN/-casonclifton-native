@@ -33,31 +33,28 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-<<<<<<< Updated upstream
       "expo-router",
-      "@config-plugins/react-native-pdf",
-      "@config-plugins/react-native-blob-util",
       [
-        "expo-image-picker",
+        "expo-build-properties",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends.",
-          "colors": {
-            "cropToolbarColor": "#000000"
+          "android": {
+            "usesCleartextTraffic": true
           },
-          "dark": {
-            "colors": {
-              "cropToolbarColor": "#000000"
-            }
+          "ios": {
+            "flipper": true
           }
         }
       ]
-=======
-      "expo-router"
->>>>>>> Stashed changes
     ],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "87b3768a-4a68-4e40-89fb-e3f4caa01ff3"
+      }
     }
   }
 }
