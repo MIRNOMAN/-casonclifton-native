@@ -1,14 +1,7 @@
 import { router } from 'expo-router';
 import { ArrowLeft, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  Image,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { HomeHeaderSkeleton } from '@/components/skeleton/HomeHeaderSkeleton';
 import { useGetMeUserQuery } from '@/redux/api/userApi';
@@ -24,10 +17,7 @@ type HomeHeaderProps = {
   variant?: 'default' | 'admin';
 };
 
-export function HomeHeader({
-  userRole = 'user',
-  variant = 'default',
-}: HomeHeaderProps) {
+export function HomeHeader({ userRole = 'user', variant = 'default' }: HomeHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const currentRole = useAppSelector(selectCurrentRole);
@@ -44,9 +34,7 @@ export function HomeHeader({
   const email = data?.data?.email || 'No email';
   const profilePhoto = data?.data?.profilePhoto || null;
 
-  const profileImageSource = profilePhoto
-    ? { uri: profilePhoto }
-    : avatarImage;
+  const profileImageSource = profilePhoto ? { uri: profilePhoto } : avatarImage;
 
   const handleDashboardPress = () => {
     setIsMenuOpen(false);
@@ -87,23 +75,15 @@ export function HomeHeader({
       <View style={styles.row}>
         <View style={styles.profileRow}>
           <View style={styles.avatarWrap}>
-            <Pressable
-              style={styles.avatar}
-              onPress={() => setIsMenuOpen((prev) => !prev)}
-            >
+            <Pressable style={styles.avatar} onPress={() => setIsMenuOpen((prev) => !prev)}>
               <Image source={profileImageSource} style={styles.avatarImage} />
             </Pressable>
 
-            {isMenuOpen && (
+            {isMenuOpen && shouldShowDashboard && (
               <View style={styles.dropdownMenu}>
                 {shouldShowDashboard && (
-                  <Pressable
-                    style={styles.dropdownItem}
-                    onPress={handleDashboardPress}
-                  >
-                    <Text style={styles.dropdownItemText}>
-                      Dashboard
-                    </Text>
+                  <Pressable style={styles.dropdownItem} onPress={handleDashboardPress}>
+                    <Text style={styles.dropdownItemText}>Dashboard</Text>
                   </Pressable>
                 )}
               </View>
@@ -111,9 +91,7 @@ export function HomeHeader({
           </View>
 
           <View>
-            <Text style={styles.greeting}>
-              Hi, {fullName}!
-            </Text>
+            <Text style={styles.greeting}>Hi, {fullName}!</Text>
 
             <View style={styles.locationRow}>
               <Mail size={12} color="#FFFFFF" />
