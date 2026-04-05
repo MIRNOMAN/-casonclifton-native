@@ -252,11 +252,10 @@ const authApi = baseApi.injectEndpoints({
         url: `/settings/account-settings`,
         method: 'PATCH',
         body: formData,
-        // Note: Do NOT set Content-Type header manually.
-        // The browser/native layer will set it to multipart/form-data with the correct boundary.
+      
       }),
-      // If your ProfileFlow depends on 'User' or 'Auth' tags to refresh, keep this.
-      invalidatesTags: ['Users', 'Auth'],
+     
+      invalidatesTags: [ 'Auth'],
     }),
 
     updateChangePassword: build.mutation({

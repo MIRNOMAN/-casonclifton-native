@@ -23,7 +23,7 @@ import { toast } from 'sonner-native';
 
 export default function ProfileFlow() {
   const token = useAppSelector(selectCurrentToken);
-  const { data: meResponse } = useGetMeUserQuery(undefined, {
+  const { data: meResponse, isLoading: isLoadingMe } = useGetMeUserQuery(undefined, {
     skip: !token,
     refetchOnMountOrArgChange: true,
   });
@@ -32,7 +32,6 @@ export default function ProfileFlow() {
   const [screen, setScreen] = useState<ScreenKey>('menu');
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
-  // Local state for UI responsiveness
   const [profile, setProfile] = useState<ProfileFormValues>({
     fullName: '',
     accountEmail: '',
@@ -78,10 +77,8 @@ export default function ProfileFlow() {
     });
   };
 
-  // Sync local state when API data arrives
   useEffect(() => {
     const meData = meResponse?.data;
-    console.log({ meData });
     if (meData) {
       setProfile({
         fullName: meData.fullName || '',
@@ -119,23 +116,12 @@ export default function ProfileFlow() {
     router.replace('/(tabs)');
   };
 
-  /**
-   * Handle the actual API submission
-   * Receives FormData from the child component.
-   * formData structure: { data: stringifiedJSON, file: File }
-   */
   const handleProfileSave = async (formData: FormData) => {
     try {
-      console.log({ formData });
       const response = await updateMeUser(formData).unwrap();
-
       toast.success(response?.message || 'Profile updated successfully!');
-
-      // Navigate back to menu on success
-      // The useEffect above will trigger a re-sync once RTK Query refetches
       changeScreen('menu');
     } catch (error: any) {
-      console.log({ error });
       const message = error?.data?.message || 'Failed to update settings.';
       toast.error(message);
     }
@@ -144,7 +130,7 @@ export default function ProfileFlow() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.root}>
-        {/* Header Section */}
+        {/* Header */}
         <View style={styles.header}>
           <Pressable
             onPress={handleHeaderBack}
@@ -161,7 +147,7 @@ export default function ProfileFlow() {
           <View style={styles.backPlaceholder} />
         </View>
 
-        {/* Animated Body Content */}
+        {/* Animated Body */}
         <Animated.View
           style={[styles.animatedBody, { opacity, transform: [{ translateX: slideX }] }]}>
           {screen === 'menu' && (
@@ -186,6 +172,7 @@ export default function ProfileFlow() {
               }}
               onSave={handleProfileSave}
               isSaving={isSavingProfile}
+              isLoading={isLoadingMe} // ✅ pass skeleton trigger
             />
           )}
 

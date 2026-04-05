@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
 } from 'react-native';
 import { toast } from 'sonner-native';
 
@@ -20,10 +21,12 @@ type AccountSettingsData = {
   profilePhotoUrl?: string | null;
   location: string;
 };
+
 type AccountSettingsScreenProps = {
   initialData: AccountSettingsData;
   onSave: (formData: FormData) => Promise<void>;
   isSaving?: boolean;
+  isLoading?: boolean; // NEW: skeleton prop
 };
 
 const GENDER_OPTIONS = [
@@ -31,15 +34,88 @@ const GENDER_OPTIONS = [
   { label: 'Female', value: 'Female' },
 ];
 
+// ─── Skeleton Components ───────────────────────────────────────────────────
+
+function SkeletonBox({ width, height, borderRadius = 8, style }: any) {
+  const opacity = React.useRef(new Animated.Value(0.4)).current;
+
+  React.useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: '#E3E8F0',
+          opacity,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+function AccountSettingsSkeleton() {
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.card}>
+        {/* Avatar skeleton */}
+        <View style={styles.avatarWrapper}>
+          <SkeletonBox width={100} height={100} borderRadius={50} />
+          <SkeletonBox width={80} height={12} borderRadius={6} style={{ marginTop: 10 }} />
+        </View>
+
+        {/* Input skeletons */}
+        {['Full Name', 'Phone Number', 'Location', 'Gender'].map((label) => (
+          <View key={label} style={styles.inputGroup}>
+            <SkeletonBox width={80} height={12} borderRadius={6} style={{ marginBottom: 8 }} />
+            <SkeletonBox width="100%" height={46} borderRadius={8} />
+          </View>
+        ))}
+
+        {/* Button skeleton */}
+        <SkeletonBox width="100%" height={50} borderRadius={8} style={{ marginTop: 10 }} />
+      </View>
+    </ScrollView>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────
+
 export default function AccountSettingsScreen({
   initialData,
   onSave,
   isSaving = false,
+  isLoading = false,
 }: AccountSettingsScreenProps) {
   const [form, setForm] = useState<AccountSettingsData>(initialData);
   const [profilePhoto, setProfilePhoto] = useState<any>(null);
   const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
   const [showGenderModal, setShowGenderModal] = useState(false);
+
+  // Show skeleton while data is loading
+  if (isLoading) {
+    return <AccountSettingsSkeleton />;
+  }
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -75,20 +151,18 @@ export default function AccountSettingsScreen({
   const handleSave = async () => {
     const formData = new FormData();
 
-    // 1. Create the JSON object for the "data" field
+    // Append JSON text fields
     const jsonData = {
       fullName: form.fullName,
       phoneNumber: form.phoneNumber,
       gender: form.gender,
       location: form.location,
     };
-
-    // 2. Append text data as a stringified JSON field
     formData.append('data', JSON.stringify(jsonData));
 
-    // 3. Append the file separately at the top level
+    // ✅ FIX: field name must be 'profilePhoto' to match the API
     if (profilePhoto) {
-      formData.append('file', profilePhoto as any);
+      formData.append('profilePhoto', profilePhoto as any);
     }
 
     await onSave(formData);
@@ -102,7 +176,7 @@ export default function AccountSettingsScreen({
             <Image source={{ uri: previewUri }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
-              <Text>Upload</Text>
+              <Text style={{ color: '#7284A3', fontSize: 13 }}>Upload</Text>
             </View>
           )}
           <Text style={styles.changePhotoText}>Change Photo</Text>
@@ -200,6 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     backgroundColor: '#F8FAFF',
+    color: '#1a1a2e',
   },
   saveButton: {
     backgroundColor: '#7284A3',

@@ -116,8 +116,7 @@ export function DocumentsScreen({
   };
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <HomeHeader userRole={resolvedUserRole} variant={headerVariant} />
       {/* Search, Category, Sort Controls */}
       <View style={{ paddingHorizontal: 18, paddingBottom: 8 }}>
@@ -154,8 +153,9 @@ export function DocumentsScreen({
           data={favoriteDocs}
           keyExtractor={(item) => item.id}
           renderItem={renderDocument}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.content, { paddingBottom: 320 + insets.bottom }]}
+          showsVerticalScrollIndicator={true}
+          scrollIndicatorInsets={{ bottom: insets.bottom }}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <Text style={styles.emptyTitle}>No favorites yet</Text>
@@ -168,8 +168,9 @@ export function DocumentsScreen({
           data={documents}
           keyExtractor={(item) => item.id}
           renderItem={renderDocument}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.content, { paddingBottom: 320 + insets.bottom }]}
+          showsVerticalScrollIndicator={true}
+          scrollIndicatorInsets={{ bottom: insets.bottom }}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
               <Text style={styles.emptyTitle}>No documents found</Text>
@@ -201,10 +202,9 @@ export function DocumentsScreen({
 }
 
 const styles = StyleSheet.create({
-   safeArea: {
+  safeArea: {
     paddingVertical: 12,
     paddingHorizontal: 10,
-
   },
   screen: {
     flex: 1,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 18,
-    paddingBottom: 120,
+    paddingBottom: 20,
   },
   emptyWrap: {
     paddingTop: 40,
