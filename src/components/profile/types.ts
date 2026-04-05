@@ -21,7 +21,6 @@ export type FaqItem = {
 export type ProfileFormValues = {
   fullName: string;
   accountEmail: string;
-  dateOfBirth: string;
   sex: string;
   phoneNumber: string;
   location: string;

@@ -247,24 +247,16 @@ const authApi = baseApi.injectEndpoints({
       },
       providesTags: ['Auth'],
     }),
-    updateMeUser: build.mutation({
-      query: (payload: { data: any; profilePhoto?: File }) => {
-        const formData = new FormData();
-
-        if (payload.profilePhoto) {
-          formData.append('profilePhoto', payload.profilePhoto as any);
-        }
-
-        formData.append('data', JSON.stringify({ payload }));
-        console.log({ profile: payload.profilePhoto });
-
-        return {
-          url: `/settings/account-settings`,
-          method: 'PATCH',
-          body: formData,
-        };
-      },
-      invalidatesTags: ['Auth'],
+    updateMeUser: build.mutation<any, FormData>({
+      query: (formData) => ({
+        url: `/settings/account-settings`,
+        method: 'PATCH',
+        body: formData,
+        // Note: Do NOT set Content-Type header manually.
+        // The browser/native layer will set it to multipart/form-data with the correct boundary.
+      }),
+      // If your ProfileFlow depends on 'User' or 'Auth' tags to refresh, keep this.
+      invalidatesTags: ['Users', 'Auth'],
     }),
 
     updateChangePassword: build.mutation({

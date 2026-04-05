@@ -8,14 +8,17 @@ import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SplashScreen() {
+  const [isFirstLoad, setIsFirstLoad] = React.useState(true);
   const router = useRouter();
 
   // 1. Get the token from Redux state reactively
   const authToken = useAppSelector((state) => state.auth.token);
 
   useEffect(() => {
+    if (!isFirstLoad) return; // Prevent running on subsequent renders
     // 2. Set a single timeout to handle navigation logic
     const timeout = setTimeout(() => {
+      setIsFirstLoad(false);
       if (authToken) {
         // Replace current route so user can't go "back" to splash
         router.replace('/(tabs)');

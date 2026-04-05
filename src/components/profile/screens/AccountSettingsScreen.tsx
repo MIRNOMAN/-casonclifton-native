@@ -1,11 +1,9 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,20 +16,13 @@ import { toast } from 'sonner-native';
 type AccountSettingsData = {
   fullName: string;
   phoneNumber: string;
-  dateOfBirth: string;
   gender: 'Male' | 'Female';
   profilePhotoUrl?: string | null;
   location: string;
 };
-
-const mediaTypes = ImagePicker.MediaTypeOptions.All;
-
 type AccountSettingsScreenProps = {
   initialData: AccountSettingsData;
-  onSave: (
-    data: AccountSettingsData,
-    profilePhoto?: { uri: string; name: string; type: string } | null
-  ) => Promise<void>;
+  onSave: (formData: FormData) => Promise<void>;
   isSaving?: boolean;
 };
 
@@ -46,180 +37,138 @@ export default function AccountSettingsScreen({
   isSaving = false,
 }: AccountSettingsScreenProps) {
   const [form, setForm] = useState<AccountSettingsData>(initialData);
-  const [profilePhoto, setProfilePhoto] = useState<{
-    uri: string;
-    name: string;
-    type: string;
-  } | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<any>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
   const [showGenderModal, setShowGenderModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (!permissionResult.granted) {
       toast.error('Permission to access the media library is required.');
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 1,
+      aspect: [1, 1],
+      quality: 0.7,
       legacy: true,
     });
 
-    if (result.canceled || result.assets.length === 0) {
-      toast.warning('No image selected.');
-      return;
-    }
+    if (result.canceled || result.assets.length === 0) return;
 
     const asset = result.assets[0];
-    let uri = asset.uri;
-    if (!uri.startsWith('file://')) {
-      uri = 'file://' + uri;
-    }
-    console.log('Selected image URI:', uri);
-    // Avoid assigning to read-only property
-    setProfilePhoto({
-      uri,
-      name: asset.fileName ? asset.fileName : 'photo.jpg',
-      type: asset.type ? asset.type : 'image/jpeg',
-    });
-    setForm((prev) => ({ ...prev, profilePhotoUrl: uri }));
+    const photoFile = {
+      uri: asset.uri,
+      name: asset.fileName || `profile_${Date.now()}.jpg`,
+      type: asset.mimeType || 'image/jpeg',
+    };
+
+    setProfilePhoto(photoFile);
+    setSelectedImagePreview(asset.uri);
+    setForm((prev) => ({ ...prev, profilePhotoUrl: asset.uri }));
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setForm((prev) => ({ ...prev, dateOfBirth: selectedDate.toISOString().split('T')[0] }));
-    }
-  };
-
-  const handleGenderSelect = (gender: 'Male' | 'Female') => {
-    setForm((prev) => ({ ...prev, gender }));
-    setShowGenderModal(false);
-  };
+  const previewUri = selectedImagePreview || form.profilePhotoUrl || undefined;
 
   const handleSave = async () => {
-    if (
-      !form.fullName ||
-      !form.location ||
-      !form.phoneNumber ||
-      !form.dateOfBirth ||
-      !form.gender
-    ) {
-      toast.error('Please fill all required fields.');
-      return;
+    const formData = new FormData();
+
+    // 1. Create the JSON object for the "data" field
+    const jsonData = {
+      fullName: form.fullName,
+      phoneNumber: form.phoneNumber,
+      gender: form.gender,
+      location: form.location,
+    };
+
+    // 2. Append text data as a stringified JSON field
+    formData.append('data', JSON.stringify(jsonData));
+
+    // 3. Append the file separately at the top level
+    if (profilePhoto) {
+      formData.append('file', profilePhoto as any);
     }
-    await onSave(form, profilePhoto);
+
+    await onSave(formData);
   };
 
   return (
-    <ScrollView contentContainerStyle={stylesContainer.container}>
-      <View style={stylesContainer.card}>
-        <TouchableOpacity onPress={handlePickImage} style={stylesContainer.avatarWrapper}>
-          {form.profilePhotoUrl ? (
-            <Image source={{ uri: form.profilePhotoUrl }} style={stylesContainer.avatar} />
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.card}>
+        <TouchableOpacity onPress={handlePickImage} style={styles.avatarWrapper}>
+          {previewUri ? (
+            <Image source={{ uri: previewUri }} style={styles.avatar} />
           ) : (
-            <View style={stylesContainer.avatarPlaceholder}>
-              <Text style={{ color: '#7284A3' }}>Upload Photo</Text>
+            <View style={styles.avatarPlaceholder}>
+              <Text>Upload</Text>
             </View>
           )}
-          <Text style={stylesContainer.changePhotoText}>Change Photo</Text>
+          <Text style={styles.changePhotoText}>Change Photo</Text>
         </TouchableOpacity>
 
-        <View style={stylesContainer.inputGroup}>
-          <Text style={stylesContainer.label}>Full Name</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Full Name</Text>
           <TextInput
-            style={stylesContainer.input}
+            style={styles.input}
             value={form.fullName}
             onChangeText={(text) => setForm((prev) => ({ ...prev, fullName: text }))}
-            placeholder="Enter your name"
           />
         </View>
 
-        <View style={stylesContainer.inputGroup}>
-          <Text style={stylesContainer.label}>Phone Number</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Phone Number</Text>
           <TextInput
-            style={stylesContainer.input}
+            style={styles.input}
             value={form.phoneNumber}
-            onChangeText={(text) => setForm((prev) => ({ ...prev, phoneNumber: text }))}
-            placeholder="Enter phone number"
             keyboardType="phone-pad"
+            onChangeText={(text) => setForm((prev) => ({ ...prev, phoneNumber: text }))}
           />
         </View>
-        <View style={stylesContainer.inputGroup}>
-          <Text style={stylesContainer.label}>Location</Text>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Location</Text>
           <TextInput
-            style={stylesContainer.input}
+            style={styles.input}
             value={form.location}
             onChangeText={(text) => setForm((prev) => ({ ...prev, location: text }))}
-            placeholder="Enter location"
           />
         </View>
 
-        <View style={stylesContainer.inputGroup}>
-          <Text style={stylesContainer.label}>Date of Birth</Text>
-          <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-            <TextInput
-              style={stylesContainer.input}
-              value={form.dateOfBirth}
-              editable={false}
-              placeholder="YYYY-MM-DD"
-              pointerEvents="none"
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={stylesContainer.inputGroup}>
-          <Text style={stylesContainer.label}>Gender</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Gender</Text>
           <TouchableOpacity onPress={() => setShowGenderModal(true)}>
-            <TextInput
-              style={stylesContainer.input}
-              value={form.gender}
-              editable={false}
-              placeholder="Select gender"
-              pointerEvents="none"
-            />
+            <View pointerEvents="none">
+              <TextInput style={styles.input} value={form.gender} editable={false} />
+            </View>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          style={[stylesContainer.saveButton, isSaving && { backgroundColor: '#b0b0b0' }]}
+          style={[styles.saveButton, isSaving && { opacity: 0.5 }]}
           onPress={handleSave}
           disabled={isSaving}>
           {isSaving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={stylesContainer.saveButtonText}>Save</Text>
+            <Text style={styles.saveButtonText}>Save</Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={form.dateOfBirth ? new Date(form.dateOfBirth) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-        />
-      )}
-
-      {/* Gender Select Modal */}
       <Modal visible={showGenderModal} transparent animationType="fade">
-        <TouchableOpacity
-          style={stylesContainer.modalOverlay}
-          onPress={() => setShowGenderModal(false)}>
-          <View style={stylesContainer.modalContent}>
-            {GENDER_OPTIONS.map((option) => (
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowGenderModal(false)}>
+          <View style={styles.modalContent}>
+            {GENDER_OPTIONS.map((opt) => (
               <TouchableOpacity
-                key={option.value}
-                onPress={() => handleGenderSelect(option.value as 'Male' | 'Female')}
-                style={stylesContainer.genderOption}>
-                <Text style={stylesContainer.genderText}>{option.label}</Text>
+                key={opt.value}
+                onPress={() => {
+                  setForm((p) => ({ ...p, gender: opt.value as any }));
+                  setShowGenderModal(false);
+                }}
+                style={styles.genderOption}>
+                <Text>{opt.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -229,30 +178,11 @@ export default function AccountSettingsScreen({
   );
 }
 
-const stylesContainer = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    width: '100%',
-    maxWidth: 400,
-
-    marginTop: 32,
-    marginBottom: 32,
-  },
-  avatarWrapper: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#eee',
-  },
+const styles = StyleSheet.create({
+  container: { flexGrow: 1, alignItems: 'center', padding: 20 },
+  card: { width: '100%', maxWidth: 400 },
+  avatarWrapper: { alignItems: 'center', marginBottom: 24 },
+  avatar: { width: 100, height: 100, borderRadius: 50 },
   avatarPlaceholder: {
     width: 100,
     height: 100,
@@ -261,61 +191,35 @@ const stylesContainer = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  changePhotoText: {
-    color: '#7284A3',
-    marginTop: 8,
-    fontSize: 14,
-  },
-  inputGroup: {
-    marginBottom: 18,
-  },
-  label: {
-    fontSize: 15,
-    color: '#7284A3',
-    marginBottom: 6,
-    marginLeft: 2,
-  },
+  changePhotoText: { color: '#7284A3', marginTop: 8 },
+  inputGroup: { marginBottom: 15 },
+  label: { color: '#7284A3', marginBottom: 5 },
   input: {
     borderWidth: 1,
     borderColor: '#E3E8F0',
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
     backgroundColor: '#F8FAFF',
-    color: '#222',
   },
   saveButton: {
     backgroundColor: '#7284A3',
+    padding: 15,
     borderRadius: 8,
-    paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 10,
   },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  saveButtonText: { color: '#fff', fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    minWidth: 200,
-    alignItems: 'center',
-  },
+  modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: 250 },
   genderOption: {
-    paddingVertical: 12,
-    width: 120,
+    paddingVertical: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#eee',
     alignItems: 'center',
-  },
-  genderText: {
-    fontSize: 16,
-    color: '#222',
   },
 });

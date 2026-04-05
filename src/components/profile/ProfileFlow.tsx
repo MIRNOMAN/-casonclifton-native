@@ -31,13 +31,14 @@ export default function ProfileFlow() {
 
   const [screen, setScreen] = useState<ScreenKey>('menu');
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+  // Local state for UI responsiveness
   const [profile, setProfile] = useState<ProfileFormValues>({
-    fullName: 'Ahmed Hassan',
-    accountEmail: 'superproglobaldubai@yastor.glog',
-    dateOfBirth: '1989-06-12',
+    fullName: '',
+    accountEmail: '',
     sex: 'Male',
-    phoneNumber: '97123456789030',
-    location: 'Dubai, UAE',
+    phoneNumber: '',
+    location: '',
     profilePhotoUrl: null,
   });
 
@@ -77,92 +78,65 @@ export default function ProfileFlow() {
     });
   };
 
-  useEffect(() => {
-    slideX.setValue(0);
-    opacity.setValue(1);
-  }, [opacity, slideX]);
-
+  // Sync local state when API data arrives
   useEffect(() => {
     const meData = meResponse?.data;
-
-    if (!meData) {
-      return;
+    console.log({ meData });
+    if (meData) {
+      setProfile({
+        fullName: meData.fullName || '',
+        accountEmail: meData.email || '',
+        phoneNumber: meData.phoneNumber || '',
+        sex: meData.gender || 'Male',
+        location: meData.location || '',
+        profilePhotoUrl: meData.profilePhoto || null,
+      });
     }
-
-    setProfile((prev) => ({
-      ...prev,
-      fullName: meData.fullName?.trim() || prev.fullName,
-      accountEmail: meData.email?.trim() || prev.accountEmail,
-      phoneNumber: meData.phoneNumber?.trim() || prev.phoneNumber,
-      dateOfBirth: meData.dateOfBirth?.trim() || prev.dateOfBirth,
-      sex: meData.gender?.trim() || prev.sex,
-      location: meData.location?.trim() || prev.location,
-      profilePhotoUrl: meData.profilePhoto || null,
-    }));
   }, [meResponse]);
 
   useFocusEffect(
     useCallback(() => {
-      isTransitioning.current = false;
-      slideX.stopAnimation();
-      opacity.stopAnimation();
-      slideX.setValue(0);
-      opacity.setValue(1);
-      setDeleteModalVisible(false);
       setScreen('menu');
-    }, [opacity, slideX])
+      return () => {
+        isTransitioning.current = false;
+      };
+    }, [])
   );
 
   const handleLogout = () => {
-    Alert.alert('Logged out', 'You have been logged out from this device.');
-    router.replace('/(auth)/login');
-  };
-
-  const confirmDeleteAccount = () => {
-    setDeleteModalVisible(false);
-    Alert.alert('Deleted', 'Your account has been deleted successfully.');
-    router.replace('/(auth)/login');
+    Alert.alert('Logout', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', onPress: () => router.replace('/(auth)/login') },
+    ]);
   };
 
   const handleHeaderBack = () => {
     if (isTransitioning.current) return;
-
     if (screen !== 'menu') {
       changeScreen('menu');
       return;
     }
-
-    // Let tab navigator handle transition to avoid double-animations and shake.
     router.replace('/(tabs)');
   };
 
-  const handleProfileSave = async (
-    next: ProfileFormValues,
-    profilePhoto?: { uri: string; name: string; type: string } | null
-  ) => {
+  /**
+   * Handle the actual API submission
+   * Receives FormData from the child component.
+   * formData structure: { data: stringifiedJSON, file: File }
+   */
+  const handleProfileSave = async (formData: FormData) => {
     try {
-      const response = await updateMeUser({
-        data: {
-          fullName: next.fullName,
-          email: next.accountEmail,
-          phoneNumber: next.phoneNumber,
-          dateOfBirth: next.dateOfBirth,
-          gender: next.sex,
-          location: next.location,
-        },
-        profilePhoto: profilePhoto
-          ? new File([await (await fetch(profilePhoto.uri)).blob()], profilePhoto.name, {
-              type: profilePhoto.type,
-            })
-          : undefined,
-      }).unwrap();
-      setProfile(next);
-      toast.success(response?.message || 'Account settings updated successfully!');
+      console.log({ formData });
+      const response = await updateMeUser(formData).unwrap();
+
+      toast.success(response?.message || 'Profile updated successfully!');
+
+      // Navigate back to menu on success
+      // The useEffect above will trigger a re-sync once RTK Query refetches
+      changeScreen('menu');
     } catch (error: any) {
-      const message =
-        error?.data?.message ||
-        error?.error ||
-        'Failed to update account settings. Please try again.';
+      console.log({ error });
+      const message = error?.data?.message || 'Failed to update settings.';
       toast.error(message);
     }
   };
@@ -170,6 +144,7 @@ export default function ProfileFlow() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.root}>
+        {/* Header Section */}
         <View style={styles.header}>
           <Pressable
             onPress={handleHeaderBack}
@@ -177,7 +152,6 @@ export default function ProfileFlow() {
             <BlurView
               intensity={40}
               tint="dark"
-              experimentalBlurMethod="dimezisBlurView"
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
             />
@@ -187,9 +161,10 @@ export default function ProfileFlow() {
           <View style={styles.backPlaceholder} />
         </View>
 
+        {/* Animated Body Content */}
         <Animated.View
           style={[styles.animatedBody, { opacity, transform: [{ translateX: slideX }] }]}>
-          {screen === 'menu' ? (
+          {screen === 'menu' && (
             <MenuScreen
               fullName={profile.fullName}
               location={profile.location || ''}
@@ -198,46 +173,36 @@ export default function ProfileFlow() {
               onDeleteAccount={() => setDeleteModalVisible(true)}
               onLogout={handleLogout}
             />
-          ) : null}
+          )}
 
-          {screen === 'change-password' ? <ChangePasswordScreen /> : null}
-          {screen === 'help-support' ? <HelpSupportScreen /> : null}
-          {screen === 'faqs' ? <FaqsScreen onNavigate={changeScreen} /> : null}
-          {screen === 'account-settings' ? (
+          {screen === 'account-settings' && (
             <AccountSettingsScreen
               initialData={{
                 fullName: profile.fullName,
                 phoneNumber: profile.phoneNumber,
-                dateOfBirth: profile.dateOfBirth,
                 gender: profile.sex as 'Male' | 'Female',
                 profilePhotoUrl: profile.profilePhotoUrl || undefined,
                 location: profile.location || '',
               }}
-              onSave={async (data, profilePhoto) => {
-                // Map AccountSettingsData back to ProfileFormValues
-                const nextProfile: ProfileFormValues = {
-                  ...profile,
-                  fullName: data.fullName,
-                  phoneNumber: data.phoneNumber,
-                  dateOfBirth: data.dateOfBirth,
-                  sex: data.gender,
-                  profilePhotoUrl: data.profilePhotoUrl || null,
-                  location: data.location || '',
-                };
-                // Pass the actual profilePhoto object to handleProfileSave
-                await handleProfileSave(nextProfile, profilePhoto as any);
-              }}
+              onSave={handleProfileSave}
               isSaving={isSavingProfile}
             />
-          ) : null}
-          {screen === 'privacy-policy' ? <PrivacyPolicyScreen /> : null}
-          {screen === 'terms' ? <TermsScreen /> : null}
+          )}
+
+          {screen === 'change-password' && <ChangePasswordScreen />}
+          {screen === 'help-support' && <HelpSupportScreen />}
+          {screen === 'faqs' && <FaqsScreen onNavigate={changeScreen} />}
+          {screen === 'privacy-policy' && <PrivacyPolicyScreen />}
+          {screen === 'terms' && <TermsScreen />}
         </Animated.View>
 
         <DeleteAccountModal
           visible={deleteModalVisible}
           onCancel={() => setDeleteModalVisible(false)}
-          onConfirm={confirmDeleteAccount}
+          onConfirm={() => {
+            setDeleteModalVisible(false);
+            router.replace('/(auth)/login');
+          }}
         />
       </View>
     </SafeAreaView>
