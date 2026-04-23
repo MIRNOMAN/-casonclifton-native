@@ -8,13 +8,7 @@
     "scheme": "minimal",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "build": {
-      "development": {
-        "ios": {
-          "simulator": true
-        }
-      }
-    },
+
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
@@ -28,9 +22,9 @@
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#121A27"
       },
-      "package": "com.robin_mia.minimal",
+      "package": "com.crestcon.app",
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
@@ -69,7 +63,9 @@
             }
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

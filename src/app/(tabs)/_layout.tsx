@@ -1,7 +1,7 @@
-import { Tabs } from 'expo-router';
-import { Easing } from 'react-native';
 import { CustomTabBar } from '@/components/documents/CustomTabBar';
 import { DocumentsProvider } from '@/features/documents/documents-context';
+import { Tabs } from 'expo-router';
+import { Easing } from 'react-native';
 
 export default function TabLayout() {
   return (

@@ -1,4 +1,4 @@
-package com.robin_mia.minimal
+package com.crestcon.app
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

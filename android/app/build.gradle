@@ -99,9 +99,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.robin_mia.minimal'
+    namespace 'com.crestcon.app'
     defaultConfig {
-        applicationId 'com.robin_mia.minimal'
+        applicationId 'com.crestcon.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

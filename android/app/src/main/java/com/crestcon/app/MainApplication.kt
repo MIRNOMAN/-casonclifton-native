@@ -1,4 +1,4 @@
-package com.robin_mia.minimal
+package com.crestcon.app
 
 import android.app.Application
 import android.content.res.Configuration

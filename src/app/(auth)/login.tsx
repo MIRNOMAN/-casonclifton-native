@@ -1,6 +1,13 @@
+import { useCreateUserLoginMutation } from '@/redux/api/userApi';
+import { setUser } from '@/redux/authSlice';
+import { useAppDispatch } from '@/redux/store';
+import { Link, router } from 'expo-router';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,17 +17,10 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   View,
-  Keyboard,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
-import { Link, router } from 'expo-router';
-import { COLORS } from '../../constants/colors';
-import { useCreateUserLoginMutation } from '@/redux/api/userApi';
-import { setUser } from '@/redux/authSlice';
-import { useAppDispatch } from '@/redux/store';
 import { toast } from 'sonner-native';
+import { COLORS } from '../../constants/colors';
 
 const INVALID_BORDER = '#FEA08F';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -87,6 +87,11 @@ export default function LoginScreen() {
         rememberMe,
       }).unwrap();
 
+      if (response.message == 'Please check your email for the verification link.') {
+        toast.error('Please verify your email before logging in.');
+        return;
+      }
+
       dispatch(
         setUser({
           role: response.data.role,
@@ -99,7 +104,7 @@ export default function LoginScreen() {
         })
       );
 
-      console.log('Login successful:', response.data);
+      console.log('Login successful:', response);
       toast.success('User logged in successfully');
 
       router.replace('/(tabs)');
